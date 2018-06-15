@@ -2,11 +2,12 @@ library(stringr)
 library(BCRDataAPI)
 library(dplyr)
 
-setwd("/home/RMBO.LOCAL/quresh.latif/CPW_beetle")
+#setwd("/home/RMBO.LOCAL/quresh.latif/CFLRP")
+setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 
 ################## Inputs ####################
 # Get latest AOU checklist with tax names and order #
-aou.checklist <- read.csv("/home/RMBO.LOCAL/quresh.latif/NACC_list_bird_species_downloaded_20180319.csv",
+aou.checklist <- read.csv("C:/Users/Quresh.Latif/files/data/NACC_list_bird_species_downloaded_20180319.csv",
                           header = T, stringsAsFactors = F) %>% tbl_df %>%
   mutate(tax_ord = row_number())
 
@@ -21,28 +22,9 @@ spp.exclude <- c("Squirrel, Red", "Ruffed Grouse", "Turkey Vulture", "Wild Turke
                  "Prairie Falcon", "Northern Harrier", "American White Pelican", "Western Screech-Owl",
                  "Double-crested Cormorant", "Bufflehead", "Thicket Tinamou", "Dusky Grouse", "Mallard",
                  "Golden Eagle")
-strata <- c("CO-CPW-SF", "CO-CPW-LP")
-BCR <- 16
+strata <- c("CO-CFLRP-CF", "CO-BCR16-RC", "CO-BCR16-PC", "CO-BCR16-VO", "CO-BCR16-PO")
 SampDesign <- c("IMBCR", "GRTS")
 ##############################################
-
-######## Functions ##########
-# Collapse species to sub-species #
-SubSppToSpp <- function(dat) {
-  dat <- dat %>%
-    mutate(BirdCode = replace(BirdCode, which(BirdCode %in% c("GHJU","PSJU","RBJU","ORJU")), "DEJU")) %>%
-    mutate(Species = replace(Species, which(BirdCode == "DEJU"), "Dark-eyed Junco")) %>%
-    mutate(BirdCode = replace(BirdCode, which(BirdCode == c("WESJ")), "WOSJ")) %>%
-    mutate(Species = replace(Species, which(BirdCode == "WOSJ"), "Woodhouse's Scrub-Jay")) %>%
-    mutate(BirdCode = replace(BirdCode, which(BirdCode == c("AUWA")), "YRWA")) %>%
-    mutate(Species = replace(Species, which(BirdCode == "YRWA"), "Yellow-rumped Warbler")) %>%
-    mutate(BirdCode = replace(BirdCode, which(BirdCode == c("RSFL")), "NOFL")) %>%
-    mutate(Species = replace(Species, which(BirdCode == "NOFL"), "Northern Flicker")) %>%
-    mutate(BirdCode = replace(BirdCode, which(BirdCode == c("MWCS")), "WCSP")) %>%
-    mutate(Species = replace(Species, which(BirdCode == "WCSP"), "White-crowned Sparrow"))
-  return(dat)
-}
-#############################
 
 #### Compile species list ####
 BCRDataAPI::reset_api()
@@ -61,18 +43,30 @@ grab <- BCRDataAPI::get_data()
 
 spp.list <- grab %>%
   filter(Year %in% 2008:2017) %>%
-  filter(primaryHabitat %in% c("LP", "SF", "II")) %>% #II?
+  filter(primaryHabitat %in% c("LP", "MC", "II", "PP")) %>% #II?
   select(primaryHabitat, BirdCode, Species) %>%
   unique %>%
   filter(!str_sub(BirdCode, 1, 2) == "UN") %>%
   filter(!Species %in% spp.exclude)
-#spp.all$BirdCode[which(str_detect(spp.all$Species, "Dark-eyed Junco"))]
 
 # Collapsing sub-species and renamed species #
-spp.list <- spp.list %>% SubSppToSpp
+ss <- BCRDataAPI::subspecies()
+spp.list <- spp.list %>%
+  mutate(BirdCode = ss[BirdCode] %>% as.character)
 
 spp.out <- spp.list %>%
   select(BirdCode, Species) %>%
+  unique
+dup.codes <- spp.out$BirdCode[which(duplicated(spp.out$BirdCode))] %>%
+  unlist %>% as.character %>% unique
+spp.out <- spp.out %>%
+  group_by(BirdCode) %>%
+  mutate(min_length = min(nchar(Species))) %>%
+  mutate(Species = str_sub(Species, 1, min_length)) %>%
+  select(BirdCode, Species) %>%
+  # Additional tweaks #
+  mutate(Species = replace(Species, which(Species %in% c("Western Scrub-Jay", "Woodhouse's Scrub")), "Woodhouse's Scrub-Jay")) %>%
+  ungroup %>%
   unique
 
 #sum(!spp.out$Species %in% aou.checklist$common_name) # check - should be zero
@@ -84,7 +78,7 @@ spp.out <- spp.out %>%
 
 spp.excluded <- grab %>%
   filter(Year %in% 2008:2017) %>%
-  filter(primaryHabitat %in% c("LP", "SF", "II")) %>% #II?
+  filter(primaryHabitat %in% c("LP", "MC", "II", "PP")) %>% #II?
   select(primaryHabitat, BirdCode, Species) %>%
   unique %>%
   filter(!str_sub(BirdCode, 1, 2) == "UN") %>%
@@ -97,7 +91,7 @@ spp.excluded <- grab %>%
   arrange(tax_ord)
 
 #### Detection data ####
-BCRDataAPI::reset_api()
+ BCRDataAPI::reset_api()
 BCRDataAPI::set_api_server('192.168.137.180')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
@@ -111,13 +105,11 @@ BCRDataAPI::add_columns(c('TransectNum|str',
                           'radialDistance|int',
                           'CL_count|int',
                           'BirdCode|str',
-                          'Species|str',
                           'How|str',
                           'Sex|str',
                           'TimePeriod|int'
 ))
 
-BCRDataAPI::filter_on(str_c('BCR = ', BCR))
 BCRDataAPI::filter_on(str_c('Stratum in ', str_c(strata, collapse = ",")))
 BCRDataAPI::filter_on(str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")))
 BCRDataAPI::filter_on('ninetynine = 0')
@@ -127,7 +119,8 @@ BCRDataAPI::filter_on('Sex <> J')
 BCRDataAPI::filter_on('Migrant = 0')
 BCRDataAPI::filter_on('TimePeriod > -1')
 BCRDataAPI::filter_on('radialDistance < 125')
-grab <- BCRDataAPI::get_data()
+grab <- BCRDataAPI::get_data() %>%
+  mutate(BirdCode = ss[BirdCode] %>% as.character)
 
 point.coords <- grab %>%
   select(TransectNum, Point, easting, northing, zone) %>%
@@ -137,48 +130,27 @@ point.list <- unique(str_c(point.coords$TransectNum,
   sort
 grid.list <- unique(point.coords$TransectNum) %>% sort
 
-## Compare grid IDs to those in JIvan's files to identify missing ##
-#JIvan_data <- read.csv("Plot_Level_Covariates.csv", header = T, stringsAsFactors = F)
-#JIvan_grids <- JIvan_data$Unit
-#JIvan_grids <- str_c("CO-CPW-", str_sub(JIvan_grids, 1, 2), "-", str_sub(JIvan_grids, 3, 5))
-#grid.list[which(!grid.list %in% JIvan_grids)]
-#JIvan_grids[which(!JIvan_grids %in% grid.list)]
+## Point X years surveyed ##
+pointXyears.list <- unique(str_c(grab$TransectNum,
+                                 str_pad(grab$Point, width = 2,
+                                         side = "left", pad = "0"),
+                                 grab$Year, sep = "-")) %>% sort
 
-## Point X years surveyed; length is same as for point.list, so not needed ##
-#pointXyears.list <- unique(str_c(grab$TransectNum,
-#                                 str_pad(grab$Point, width = 2,
-#                                         side = "left", pad = "0"),
-#                                 grab$Year, sep = "-")) %>%
-#  sort
+## Make sure all spp in data are in spp.list ##
 
 ## Add number of detections and count summaries to spp.out by stratum ##
-smry <- grab %>% filter(Stratum == "CO-CPW-LP") %>%
-  select(BirdCode, TransectNum, Point) %>% unique %>%
-  group_by(BirdCode) %>% count() %>%
-  rename(Detections_LP = n)
+smry <- grab %>% select(BirdCode, TransectNum, Point, Year) %>%
+  unique %>% group_by(BirdCode) %>% count() %>%
+  rename(Detections = n)
 spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
 
-smry <- grab %>% filter(Stratum == "CO-CPW-SF") %>%
-  select(BirdCode, TransectNum, Point) %>% unique %>%
-  group_by(BirdCode) %>% count() %>%
-  rename(Detections_SF = n)
-spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
-
-smry <- grab %>% filter(Stratum == "CO-CPW-LP") %>%
-  select(BirdCode, TransectNum, Point, CL_count) %>%
+smry <- grab %>% select(BirdCode, CL_count) %>%
   group_by(BirdCode) %>%
-  summarise(sumCount_LP = sum(CL_count))
-spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
-
-smry <- grab %>% filter(Stratum == "CO-CPW-SF") %>%
-  select(BirdCode, TransectNum, Point, CL_count) %>%
-  group_by(BirdCode) %>%
-  summarise(sumCount_SF = sum(CL_count))
+  summarise(sumCount = sum(CL_count))
 spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
 
 spp.out <- spp.out %>% # replace NAs with zeros
-  mutate_at(vars(Detections_LP, Detections_SF, sumCount_LP, sumCount_SF),
-            (function(x) replace(x, is.na(x), 0)))
+  mutate_at(vars(Detections, sumCount), (function(x) replace(x, is.na(x), 0)))
 
 spp.out <- spp.out %>% # compile ratio of count totals to number of detections for spp with > 30 detections #
   mutate(RatioCountToDet_LP = sumCount_LP / Detections_LP) %>%
@@ -186,11 +158,9 @@ spp.out <- spp.out %>% # compile ratio of count totals to number of detections f
   mutate(RatioCountToDet_SF = sumCount_SF / Detections_SF) %>%
   mutate(RatioCountToDet_SF = replace(RatioCountToDet_SF, which(Detections_SF < 30), NA))
 
-maxDetPossible <- str_sub(point.list, 8, 9) %>% tapply(., ., length) # max possible by stratum
-names(spp.out)[which(names(spp.out) == "Detections_LP")] <-
-  str_c("Detections_LP (max = ",maxDetPossible["LP"],")")
-names(spp.out)[which(names(spp.out) == "Detections_SF")] <-
-  str_c("Detections_SF (max = ",maxDetPossible["SF"],")")
+maxDetPossible <- length(pointXyears.list) # max possible by stratum
+names(spp.out)[which(names(spp.out) == "Detections")] <-
+  str_c("Detections (max = ", maxDetPossible, ")")
 
 write.csv(spp.out, "Spp_list.csv", row.names = F)
 rm(smry)
@@ -226,6 +196,8 @@ spp.excluded <- spp.excluded %>% # replace NAs with zeros
 
 write.csv(spp.excluded, "Spp_excluded.csv", row.names = F)
 rm(smry)
+
+#**** Stopped here **** Did not finish adapting the rest yet from CPW analysis - need to wait for covariates
 
 ## Trim dates, compile day of year & start time in minutes ##
 library(timeDate)
