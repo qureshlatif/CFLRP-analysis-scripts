@@ -21,8 +21,8 @@ spp.exclude <- c("Squirrel, Red", "Ruffed Grouse", "Turkey Vulture", "Wild Turke
                  "California Gull", "Northern Saw-whet Owl", "Long-eared Owl", "Flammulated Owl",
                  "Prairie Falcon", "Northern Harrier", "American White Pelican", "Western Screech-Owl",
                  "Double-crested Cormorant", "Bufflehead", "Thicket Tinamou", "Dusky Grouse", "Mallard",
-                 "Golden Eagle")
-strata <- c("CO-CFLRP-CF", "CO-BCR16-RC", "CO-BCR16-PC", "CO-BCR16-VO", "CO-BCR16-PO")
+                 "Golden Eagle", "Gadwall", "Virginia Rail")
+strata <- c("CO-CFLRP-CF", "CO-BCR16-RC", "CO-BCR16-PC")
 SampDesign <- c("IMBCR", "GRTS")
 ##############################################
 
@@ -57,10 +57,8 @@ spp.list <- spp.list %>%
 spp.out <- spp.list %>%
   select(BirdCode, Species) %>%
   unique
-dup.codes <- spp.out$BirdCode[which(duplicated(spp.out$BirdCode))] %>%
-  unlist %>% as.character %>% unique
 spp.out <- spp.out %>%
-  group_by(BirdCode) %>%
+  dplyr::group_by(BirdCode) %>%
   mutate(min_length = min(nchar(Species))) %>%
   mutate(Species = str_sub(Species, 1, min_length)) %>%
   select(BirdCode, Species) %>%
@@ -91,7 +89,7 @@ spp.excluded <- grab %>%
   arrange(tax_ord)
 
 #### Detection data ####
- BCRDataAPI::reset_api()
+BCRDataAPI::reset_api()
 BCRDataAPI::set_api_server('192.168.137.180')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
@@ -105,6 +103,7 @@ BCRDataAPI::add_columns(c('TransectNum|str',
                           'radialDistance|int',
                           'CL_count|int',
                           'BirdCode|str',
+                          'Species|str',
                           'How|str',
                           'Sex|str',
                           'TimePeriod|int'
@@ -112,6 +111,7 @@ BCRDataAPI::add_columns(c('TransectNum|str',
 
 BCRDataAPI::filter_on(str_c('Stratum in ', str_c(strata, collapse = ",")))
 BCRDataAPI::filter_on(str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")))
+BCRDataAPI::filter_on('Year in 2014,2015,2016')
 BCRDataAPI::filter_on('ninetynine = 0')
 BCRDataAPI::filter_on('eightyeight = 0')
 BCRDataAPI::filter_on('How <> F')
@@ -137,15 +137,16 @@ pointXyears.list <- unique(str_c(grab$TransectNum,
                                  grab$Year, sep = "-")) %>% sort
 
 ## Make sure all spp in data are in spp.list ##
+#grab$BirdCode[which(!grab$BirdCode %in% c(spp.list$BirdCode, spp.excluded$BirdCode))] %>% unique
 
 ## Add number of detections and count summaries to spp.out by stratum ##
 smry <- grab %>% select(BirdCode, TransectNum, Point, Year) %>%
-  unique %>% group_by(BirdCode) %>% count() %>%
+  unique %>% dplyr::group_by(BirdCode) %>% count() %>%
   rename(Detections = n)
 spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
 
 smry <- grab %>% select(BirdCode, CL_count) %>%
-  group_by(BirdCode) %>%
+  dplyr::group_by(BirdCode) %>%
   summarise(sumCount = sum(CL_count))
 spp.out <- spp.out %>% left_join(smry, by = "BirdCode")
 
@@ -153,10 +154,8 @@ spp.out <- spp.out %>% # replace NAs with zeros
   mutate_at(vars(Detections, sumCount), (function(x) replace(x, is.na(x), 0)))
 
 spp.out <- spp.out %>% # compile ratio of count totals to number of detections for spp with > 30 detections #
-  mutate(RatioCountToDet_LP = sumCount_LP / Detections_LP) %>%
-  mutate(RatioCountToDet_LP = replace(RatioCountToDet_LP, which(Detections_LP < 30), NA)) %>%
-  mutate(RatioCountToDet_SF = sumCount_SF / Detections_SF) %>%
-  mutate(RatioCountToDet_SF = replace(RatioCountToDet_SF, which(Detections_SF < 30), NA))
+  mutate(RatioCountToDet = sumCount / Detections) %>%
+  mutate(RatioCountToDet = replace(RatioCountToDet, which(Detections < 60), NA))
 
 maxDetPossible <- length(pointXyears.list) # max possible by stratum
 names(spp.out)[which(names(spp.out) == "Detections")] <-
@@ -165,43 +164,312 @@ names(spp.out)[which(names(spp.out) == "Detections")] <-
 write.csv(spp.out, "Spp_list.csv", row.names = F)
 rm(smry)
 
-## Add number of detections and count summaries to excluded species by stratum ##
-smry <- grab %>% filter(Stratum == "CO-CPW-LP") %>%
-  select(BirdCode, TransectNum, Point) %>% unique %>%
-  group_by(BirdCode) %>% count() %>%
-  rename(Detections_LP = n)
+## Add number of detections and count summaries to excluded species ##
+smry <- grab %>% select(BirdCode, TransectNum, Point, Year) %>% unique %>%
+  dplyr::group_by(BirdCode) %>% count() %>%
+  rename(Detections = n)
 spp.excluded <- spp.excluded %>% left_join(smry, by = "BirdCode")
 
-smry <- grab %>% filter(Stratum == "CO-CPW-SF") %>%
-  select(BirdCode, TransectNum, Point) %>% unique %>%
-  group_by(BirdCode) %>% count() %>%
-  rename(Detections_SF = n)
-spp.excluded <- spp.excluded %>% left_join(smry, by = "BirdCode")
-
-smry <- grab %>% filter(Stratum == "CO-CPW-LP") %>%
-  select(BirdCode, TransectNum, Point, CL_count) %>%
-  group_by(BirdCode) %>%
-  summarise(sumCount_LP = sum(CL_count))
-spp.excluded <- spp.excluded %>% left_join(smry, by = "BirdCode")
-
-smry <- grab %>% filter(Stratum == "CO-CPW-SF") %>%
-  select(BirdCode, TransectNum, Point, CL_count) %>%
-  group_by(BirdCode) %>%
-  summarise(sumCount_SF = sum(CL_count))
+smry <- grab %>% select(BirdCode, TransectNum, Point, CL_count) %>%
+  dplyr::group_by(BirdCode) %>%
+  summarise(sumCount = sum(CL_count))
 spp.excluded <- spp.excluded %>% left_join(smry, by = "BirdCode")
 
 spp.excluded <- spp.excluded %>% # replace NAs with zeros
-  mutate_at(vars(Detections_LP, Detections_SF, sumCount_LP, sumCount_SF),
+  mutate_at(vars(Detections, sumCount),
             (function(x) replace(x, is.na(x), 0)))
 
 write.csv(spp.excluded, "Spp_excluded.csv", row.names = F)
 rm(smry)
 
-#**** Stopped here **** Did not finish adapting the rest yet from CPW analysis - need to wait for covariates
+bird_data <- grab %>%  # Store bird survey data for later use.
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year))
+
+#### Covariate data ####
+### Questions: ###
+# 1. Should we filter by primaryHabitat?
+# 2. Should we include NumSnags or RCOV_Dead as covariate?
+
+# Canopy data #
+BCRDataAPI::reset_api()
+BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::add_columns(c('TransectNum|str',
+                          'Point|int',
+                          'Year|int',
+                          'Stratum|str',
+                          'o_canopy_percent|int',
+                          'OverstorySpecies|str',
+                          'OverstorySpeciesAbundance|int',
+                          'OverstoryCommonName|str',
+                          'OverstoryScientificName|str',
+                          'NumSnags|int',
+                          'primaryHabitat|str',
+                          'HabitatCommonName',
+                          'o_mean_height|int'
+))
+
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        'Year in 2014,2015,2016',
+                        'UnusableDataOverstorySpecies = FALSE'))
+grab <- BCRDataAPI::get_data() %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  rename(CanCov = o_canopy_percent, CanHt = o_mean_height,
+         Species = OverstorySpecies, Abundance = OverstorySpeciesAbundance) %>%
+  mutate(CanCov = replace(CanCov, which(CanCov == -1), NA),
+         CanHt = replace(CanHt, which(CanHt == -1), NA),
+         NumSnags = replace(NumSnags, which(NumSnags == -1), NA)) %>%
+  filter(Abundance != -1) # There are two records here. 100 - sum(Abundance for other species) </= 1, so decided to delete them.
+
+# Primary habitats table #
+#grab %>% select(primaryHabitat, HabitatCommonName) %>%
+#  unique %>% arrange(primaryHabitat) %>%
+#  View
+
+# Overstory species table (refer to this for developing categories). #
+#grab %>% select(Species, OverstoryCommonName, OverstoryScientificName) %>%
+#  rename(ComName = OverstoryCommonName, SciName = OverstoryScientificName) %>%
+#  unique %>% arrange(Species) %>%
+#  View
+
+veg_data <- grab %>%
+  select(Point_year, CanCov, CanHt, primaryHabitat, NumSnags) %>%
+  unique %>%
+  # Ponderosa pine cover #
+  left_join(grab %>%
+              filter(Species == "PP") %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RCOV_PP = Abundance), by = "Point_year") %>%
+  # Douglas fir cover #
+  left_join(grab %>%
+              filter(Species == "DF") %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RCOV_DF = Abundance), by = "Point_year") %>%
+  # Aspen cover #
+  left_join(grab %>%
+              filter(Species == "AS") %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RCOV_AS = Abundance), by = "Point_year") %>%
+  # Standing dead #
+  left_join(grab %>%
+              filter(Species %in% c("DC", "DD", "DA", "BC", "BD", "DJ")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RCOV_Dead = Abundance), by = "Point_year") %>%
+  # Everything else (Keep track of what the majority of this is.) #
+  left_join(grab %>%
+              filter(!Species %in% c("PP", "DF", "AS", "DC", "DD", "DA", "BC", "BD", "DJ")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RCOV_OT = Abundance), by = "Point_year") %>%
+  mutate_at(vars(RCOV_PP:RCOV_OT), funs(replace(.,is.na(.),0))) %>%
+  mutate(RCOV_TOT = RCOV_PP + RCOV_DF + RCOV_AS + RCOV_Dead + RCOV_OT) %>%
+  # RCOV_TOT values != 100 (n = 83) are within 10% of 100, so rescaling them to sum to 100.
+  mutate(RCOV_PP = (RCOV_PP / RCOV_TOT) *100) %>%
+  mutate(RCOV_DF = (RCOV_DF / RCOV_TOT) *100) %>%
+  mutate(RCOV_AS = (RCOV_AS / RCOV_TOT) *100) %>%
+  mutate(RCOV_Dead = (RCOV_Dead / RCOV_TOT) *100) %>%
+  mutate(RCOV_OT = (RCOV_OT / RCOV_TOT) *100) %>%
+  select(-RCOV_TOT)
+
+# Shrub data #
+BCRDataAPI::reset_api()
+BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::add_columns(c('TransectNum|str',
+                          'Point|int',
+                          'Year|int',
+                          'shrub_cover|int',
+                          'shrub_mean_height|num',
+                          'ShrubLayerSpecies|str',
+                          'ShrubLayerCommonName|str',
+                          'ShrubLayerScientificName|str',
+                          'ShrubLayerSpeciesAbundance|int'
+))
+
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        'Year in 2014,2015,2016',
+                        'ShrubSpecies = FALSE'
+                        ))
+grab <- BCRDataAPI::get_data() %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  rename(ShrubHt = shrub_mean_height,
+         Species = ShrubLayerSpecies, Abundance = ShrubLayerSpeciesAbundance) %>%
+  mutate(shrub_cover = replace(shrub_cover, which(shrub_cover == -1), NA),
+         ShrubHt = replace(ShrubHt, which(ShrubHt == -1), NA)) %>%
+  filter(!Species %in% c("BG", "SN")) %>% # Remove stuff that isn't a shrub
+  mutate(Abundance = replace(Abundance, which(Point_year == "CO-CFLRP-CF28-15-2014" & Species == "SU"), 30)) # Fill in missing value with 100 - sum(other spp)
+
+# Major shrub spp (> 1000 records): CJ & JU (juniper), DF (Douglas fir), GB (Gooseberry / Currant / Ribes), AS (Aspen), PP (ponderosa pine)
+# Minor shrub spp (300-500 records): CR (cliff rose, Purshia spp.), MM (Mountain Mahogany), LP (lodgepole pine), WX (waxflower), MA (Rocky Mountain Maple), ES (Englemann Spruce)
+# Incidental spp (< 300 records): WI (Willow), WR (Wild rose), SC (Shrubby Cinquefoil), YU (Yucca), BB (blackberry), LM (Limber pine), CC (Choke cherry),
+# BF (buffaloberry), SA (sagebrush), NB (ninebark), SY (snowberry), BS (blue spruce), UD (unknown deciduous), SB (service berry), SU (subalpine fir),
+# MZ (manzanita), SK (skunkbrush), GO (Gambel oak), OT (other??), MS (mountain spray), HA (hawthorn), HB (huckleberry), BU (ragweed/bursage), AM (Apache plume),
+# RA (rabbitbrush), DC (dead conifer), AL (alder), TW (twinberry), BR (bristlecone pine), WB (water birch), UC (unknown conifer), SW (snakeweed), WF (white fir),
+# BC (burnt conifer), WN (winterfat), OG (Oregon-grape), RD (Red-osier dogwood), DD (dead deciduous), VI (Viburnum), TA (Tamarisk), CA (Ceanothus), SL (Saltbush),
+# PY (Pinyon pine), NC (narrow-leaf cottonwood), EB (elderberry), XX (not listed), DA (dead aspen), AP (American plum), PI (??), PC (Plains cottonwood),
+# GW (greasewood), SI (??), SE (single-leaf ash), OB (oak bush), LU (??), LT (??), DJ (dead juniper), CE (creosote), BI (birch), AH (ash)
+
+  # Shrub categories:
+    # Juniper - c()
+    # Conifer ladder - c("CJ", "JU", "DJ", "DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF")
+    # Berry - c("GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB")
+    # Aspen - c("AS", "DA")
+    # Xeric - c("CR", "MM", "WX", "YU", "BF", "SA", "MZ", "SK", "GO", "RA", "SL", "CE", "GW", "WN")
+    # Mesic - c("WI", "WR", "AL", "WB", "PC", "BI", "TA", "NC", "RD")
+    # Other (left out) - c("MA", "SC", "NB", "UD", "OT", "MS", "HA", "BU", "AM", "SW", "DD", "VI", "CA", "XX", "AP", "PI", "SI", "SE", "OB", "LU", "LT", "AH")
+
+shrub_data <- grab %>%
+  select(Point_year, shrub_cover, ShrubHt) %>%
+  unique %>%
+  # Shrub diversity #
+  left_join(grab %>%
+              mutate(p = Abundance / 100) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(ShrubDiv = -1*sum(p * log(p))), by = "Point_year") %>%
+  # Ladder fuel species #
+  left_join(grab %>%
+              filter(Species %in% c("CJ", "JU", "DJ", "DF", "PP", "LP", "ES", "UC", "SU",
+                                    "BR", "DD", "BC", "PY", "BS", "LM", "WF", "GO")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RSCV_Ladder = Abundance), by = "Point_year") %>%
+  # Berry bushes #
+  left_join(grab %>%
+              filter(Species %in% c("GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RSCV_Ber = Abundance), by = "Point_year") %>%
+  # Aspen cover #
+  left_join(grab %>%
+              filter(Species %in% c("AS", "DA")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RSCV_AS = Abundance), by = "Point_year") %>%
+  # Xeric #
+  #left_join(grab %>%
+  #            filter(Species %in% c("CR", "MM", "WX", "YU", "BF", "SA", "MZ", "SK", "GO", "RA", "SL", "CE", "GW", "WN")) %>%
+  #            select(Point_year, Abundance) %>%
+  #            dplyr::group_by(Point_year) %>%
+  #            summarise(Abundance = sum(Abundance)) %>%
+  #            rename(RSCV_Xer = Abundance), by = "Point_year") %>%
+  # Mesic #
+  #left_join(grab %>%
+  #            filter(Species %in% c("WI", "WR", "AL", "WB", "PC", "BI", "TA", "NC", "RD")) %>%
+  #            select(Point_year, Abundance) %>%
+  #            dplyr::group_by(Point_year) %>%
+  #            summarise(Abundance = sum(Abundance)) %>%
+  #            rename(RSCV_Mes = Abundance), by = "Point_year") %>%
+  # Everything else #
+  left_join(grab %>%
+              filter(!Species %in% c("CJ", "JU", "DJ","DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF",
+                                     "GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB",
+                                     "AS", "DA")) %>%
+              select(Point_year, Abundance) %>%
+              dplyr::group_by(Point_year) %>%
+              summarise(Abundance = sum(Abundance)) %>%
+              rename(RSCV_OT = Abundance), by = "Point_year") %>%
+  mutate_at(vars(RSCV_Ladder:RSCV_OT), funs(replace(.,is.na(.),0))) %>%
+  mutate(RCOV_TOT = RSCV_Ladder + RSCV_Ber + RSCV_AS + RSCV_OT) %>% # RSCV_Jun + RSCV_Xer + RSCV_Mes + 
+  # Rescale where TOT within 10% of 100...
+  #mutate(RSCV_Jun = (RSCV_Jun / RCOV_TOT) *100) %>%
+  mutate(RSCV_Ladder = (RSCV_Ladder / RCOV_TOT) *100) %>%
+  mutate(RSCV_Ber = (RSCV_Ber / RCOV_TOT) *100) %>%
+  mutate(RSCV_AS = (RSCV_AS / RCOV_TOT) *100) %>%
+  #mutate(RSCV_Xer = (RSCV_Xer / RCOV_TOT) *100) %>%
+  #mutate(RSCV_Mes = (RSCV_Mes / RCOV_TOT) *100) %>%
+  mutate(RSCV_OT = (RSCV_OT / RCOV_TOT) *100) %>%
+  # ...and dump the rest.
+  #mutate(RSCV_Jun = replace(RSCV_Jun, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  mutate(RSCV_Ladder = replace(RSCV_Ladder, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  mutate(RSCV_Ber = replace(RSCV_Ber, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  mutate(RSCV_AS = replace(RSCV_AS, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  #mutate(RSCV_Xer = replace(RSCV_Xer, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  #mutate(RSCV_Mes = replace(RSCV_Mes, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  mutate(RSCV_OT = replace(RSCV_OT, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
+  select(-RCOV_TOT)
+
+veg_data <- veg_data %>% left_join(shrub_data, by = "Point_year")
+rm(shrub_data)
+
+# Ground cover #
+BCRDataAPI::reset_api()
+BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::add_columns(c('TransectNum|str',
+                          'Point|int',
+                          'Year|int',
+                          'gc_woody|int',
+                          'gc_live_grass|int',
+                          'gc_grass|int',
+                          'gc_herb|int',
+                          'gc_bare_litter|int',
+                          'gc_live_grass_height|int',
+                          'gc_grass_height|int'
+))
+BCRDataAPI::group_by(c('TransectNum', 'Point', 'Year', 'gc_woody', 'gc_live_grass', 'gc_grass',
+                       'gc_herb', 'gc_bare_litter', 'gc_live_grass_height', 'gc_grass_height'))
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        'Year in 2014,2015,2016',
+                        'UnusableDataOverstorySpecies = FALSE'))
+grab <- BCRDataAPI::get_data() %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  rename(LiveGrass = gc_live_grass,
+         DeadGrass = gc_grass,
+         Herb = gc_herb,
+         LGrassHt = gc_live_grass_height,
+         DGrassHt = gc_grass_height) %>%
+  mutate(LiveGrass = replace(LiveGrass, which(LiveGrass == -1), NA),
+         DeadGrass = replace(DeadGrass, which(DeadGrass == -1), NA),
+         Herb = replace(Herb, which(Herb == -1), NA)) %>%
+  mutate(HerbGrass = LiveGrass + DeadGrass + Herb) %>%
+  mutate(LGrassHt = replace(LGrassHt, which(LiveGrass == 0), 0),
+         LGrassHt = replace(LGrassHt, which(is.na(LiveGrass)), NA),
+         DGrassHt = replace(DGrassHt, which(DeadGrass == 0), 0),
+         DGrassHt = replace(DGrassHt, which(is.na(DeadGrass)), NA),
+         GrassHt = (LGrassHt * LiveGrass + DGrassHt * DeadGrass) / (LiveGrass + DeadGrass)) %>%
+  select(Point_year, HerbGrass, GrassHt)
+
+veg_data <- veg_data %>% left_join(grab, by = "Point_year")
+rm(grab)
+
+# Get treatment covariates #
+library(foreign)
+dat.gis <- read.dbf("C:/Users/Quresh.Latif/files/GIS/FS/CFLRP/Bird_survey_point_coords.dbf", as.is = T) %>%
+  tbl_df() %>%
+  mutate(Trt_status = replace(Trt_status, which(Trt_status == "Not treat*"), NA) %>% as.integer())
+dat.gis <- dat.gis %>%
+  mutate(Year = 2014) %>%
+  bind_rows(dat.gis %>%
+              mutate(Year = 2015)) %>%
+  bind_rows(dat.gis %>%
+              mutate(Year = 2016)) %>%
+  mutate(Point_year = str_c(TransectNu, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  mutate(Trt_status = replace(Trt_status, which(is.na(Trt_status)), 9999)) %>%
+  mutate(Trt_stat = (Year >= Trt_status) %>% as.integer)
+dat.gis <- dat.gis %>%
+  mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
+  mutate(Trt_time = Year - Trt_status) %>%
+  mutate(Trt_time = replace(Trt_time, which(Trt_stat == 0), NA)) %>%
+  select(Point_year, Trt_stat, Trt_time)
+
+veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
+rm(dat.gis)
 
 ## Trim dates, compile day of year & start time in minutes ##
 library(timeDate)
-grab <- grab %>%
+bird_data <- bird_data %>%
   mutate(Day = Date %>% str_sub(6, 7)) %>%
   mutate(Month = Date %>% str_sub(9, 11)) %>%
   mutate(MM = "05") %>%
@@ -215,98 +483,47 @@ grab <- grab %>%
   mutate(MIN = PointVisitStartTime %>% str_sub(-2, -1) %>% as.integer) %>%
   mutate(Time_min = HR*60 + MIN) %>%
   select(TransectNum:Date, DOY, Time_min, PointVisitStartTime:TimePeriod)
-  
-## Habitat covariate data ##
-cov_tab_import <- read.csv("Covariates.csv", header = T, stringsAsFactors = F) %>%
-  tbl_df() %>%
-  mutate(YSI = replace(YSI, which(YSI == -1), NA)) %>%
-  rename(DeadConif = DeadConif_RCov) %>%
-  rename(YSO = YSI) %>%
-  select(Point, TWIP, DeadConif, YSO, CanCov, RCOV_AS, RCOV_ES, RCOV_Pine, shrub_cover,
-         RCShrb_UD, HerbCov)
 
 ## Compile multidimensional detection data array ##
 spp.list <- spp.out$BirdCode
-cov.names <- c("gridIndex", "DayOfYear", "Time", names(cov_tab_import)[-1])
-grab <- grab %>%
-  mutate(Point = TransectNum %>% str_sub(8, -1) %>%
-           str_c("-", (Point %>% str_pad(width = 2, pad = 0, side = "left"))))
+cov.names <- c("gridIndex", "YearInd", "DayOfYear", "Time", names(veg_data)[-c(1, 4)])
 
-# Lodgepole pine stratum #
-point.list.LP <- point.list[which(str_sub(point.list, 8, 9) == "LP")] %>%
-  str_sub(8, -1) %>% sort
-Y.LP <- matrix(NA, nrow = length(point.list.LP), ncol = length(spp.list),
-               dimnames = list(point.list.LP, spp.list))
-T.LP <- matrix(6, nrow = length(point.list.LP), ncol = length(spp.list),
-               dimnames = list(point.list.LP, spp.list))
+bird_data <- bird_data %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year))
+Y.mat <- matrix(NA, nrow = length(pointXyears.list), ncol = length(spp.list),
+               dimnames = list(pointXyears.list, spp.list))
+TR.mat <- matrix(6, nrow = length(pointXyears.list), ncol = length(spp.list),
+               dimnames = list(pointXyears.list, spp.list))
 for(sp in 1:length(spp.list)) {
-  obs <- grab %>% filter(BirdCode == spp.list[sp] & str_sub(Point, 1, 2) == "LP")
+  obs <- bird_data %>% filter(BirdCode == spp.list[sp])
   if(nrow(obs) > 0) {
-    Y.LP[, sp] <- (point.list.LP %in% obs$Point) %>% as.integer
-    tvec <- tapply(obs$TimePeriod, obs$Point, min)
+    Y.mat[, sp] <- (pointXyears.list %in% obs$Point_year) %>% as.integer
+    tvec <- tapply(obs$TimePeriod, obs$Point_year, min)
     tvec <- tvec[order(names(tvec))]
-    T.LP[which(point.list.LP %in% obs$Point), sp] <- tvec
+    TR.mat[which(pointXyears.list %in% obs$Point_year), sp] <- tvec
   } else {
-    Y.LP[, sp] <- 0
+    Y.mat[, sp] <- 0
   }
 }
 
-Cov.LP <- matrix(NA, nrow = length(point.list.LP), ncol = length(cov.names),
-                 dimnames = list(point.list.LP, cov.names))
-Cov.LP[, "gridIndex"] <- point.list.LP %>% str_sub(1, -4) %>% as.factor %>% as.integer
-Cov.LP[, "DayOfYear"] <- (grab %>% filter(Stratum == "CO-CPW-LP") %>%
-                            select(Point, DOY) %>% unique %>% arrange(Point))$DOY
-Cov.LP[, "Time"] <- (grab %>% filter(Stratum == "CO-CPW-LP") %>%
-                            select(Point, Time_min) %>% unique %>% arrange(Point))$Time_min
-ind.vals <- which(point.list.LP %in% (cov_tab_import$Point %>% str_sub(8, -1)))
-Cov.LP[ind.vals, -c(1:3)] <- cov_tab_import %>%
-  mutate(Point = Point %>% str_sub(8, -1)) %>%
-  filter(Point %in% point.list.LP) %>%
-  arrange(Point) %>%
-  select(-Point) %>%
+Cov <- matrix(NA, nrow = length(pointXyears.list), ncol = length(cov.names),
+              dimnames = list(pointXyears.list, cov.names))
+Cov[, "gridIndex"] <- pointXyears.list %>% str_sub(1, -9) %>% as.factor %>% as.integer
+Cov[, "YearInd"] <- pointXyears.list %>% str_sub(-4, -1) %>% as.factor %>% as.integer
+Cov[, "DayOfYear"] <- (bird_data %>%
+                            select(Point_year, DOY) %>% unique %>% arrange(Point_year))$DOY
+Cov[, "Time"] <- (bird_data %>%
+                            select(Point_year, Time_min) %>% unique %>% arrange(Point_year))$Time_min
+ind.vals <- which(pointXyears.list %in% (veg_data$Point_year))
+Cov[ind.vals, -c(1:4)] <- veg_data %>%
+  filter(Point_year %in% pointXyears.list) %>%
+  arrange(Point_year) %>%
+  select(-Point_year) %>%
+  select(-primaryHabitat) %>%
   as.matrix
 
-# Spruce-fir stratum #
-point.list.SF <- point.list[which(str_sub(point.list, 8, 9) == "SF")] %>%
-  str_sub(8, -1) %>% sort
-Y.SF <- matrix(NA, nrow = length(point.list.SF), ncol = length(spp.list),
-               dimnames = list(point.list.SF, spp.list))
-T.SF <- matrix(6, nrow = length(point.list.SF), ncol = length(spp.list),
-               dimnames = list(point.list.SF, spp.list))
-for(sp in 1:length(spp.list)) {
-  obs <- grab %>% filter(BirdCode == spp.list[sp] & str_sub(Point, 1, 2) == "SF")
-  if(nrow(obs) > 0) {
-    Y.SF[, sp] <- (point.list.SF %in% obs$Point) %>% as.integer
-    tvec <- tapply(obs$TimePeriod, obs$Point, min)
-    tvec <- tvec[order(names(tvec))]
-    T.SF[which(point.list.SF %in% obs$Point), sp] <- tvec
-  } else {
-    Y.SF[, sp] <- 0
-  }
-}
-
-Cov.SF <- matrix(NA, nrow = length(point.list.SF), ncol = length(cov.names),
-                 dimnames = list(point.list.SF, cov.names))
-Cov.SF[, "gridIndex"] <- point.list.SF %>% str_sub(1, -4) %>% as.factor %>% as.integer
-Cov.SF[, "DayOfYear"] <- (grab %>% filter(Stratum == "CO-CPW-SF") %>%
-                            select(Point, DOY) %>% unique %>% arrange(Point))$DOY
-Cov.SF[, "Time"] <- (grab %>% filter(Stratum == "CO-CPW-SF") %>%
-                            select(Point, Time_min) %>% unique %>% arrange(Point))$Time_min
-ind.vals <- which(point.list.SF %in% (cov_tab_import$Point %>% str_sub(8, -1)))
-Cov.SF[ind.vals, -c(1:3)] <- cov_tab_import %>%
-  mutate(Point = Point %>% str_sub(8, -1)) %>%
-  filter(Point %in% point.list.SF) %>%
-  arrange(Point) %>%
-  select(-Point) %>%
-  as.matrix
-
-rm(ind.vals, obs, maxDetPossible, sp, tvec)
+rm(ind.vals, obs, maxDetPossible, sp, ss, tvec)
 save.image("Data_compiled.RData")
 
-## Correlation matrices ##
-Cov.LP[, c("TWIP", "DeadConif", "CanCov", "RCOV_AS", "RCOV_ES", "RCOV_Pine",
-           "shrub_cover", "RCShrb_UD", "HerbCov")] %>% cor(use = "complete")
-#plot(Cov.LP[, "RCOV_Pine"], Cov.LP[, "RCOV_AS"]) #Drop RCOV_ES from LP strata analysis.
-
-Cov.SF[, c("TWIP", "DeadConif", "CanCov", "RCOV_AS", "RCOV_ES", "RCOV_Pine",
-           "shrub_cover", "RCShrb_UD", "HerbCov")] %>% cor(use = "complete")
+## Correlation matrix ##
+Cov[, cov.names[-c(1:4, 11:12, 19, 23)]] %>% cor(use = "complete")

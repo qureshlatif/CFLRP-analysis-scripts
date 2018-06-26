@@ -12,7 +12,7 @@ BCRDataAPI::add_columns(c('TransectNum|str',
                           'Northing|int',
                           'Zone|int')
 )
-BCRDataAPI::filter_on('Stratum in CO-CFLRP-CF,CO-BCR16-RC,CO-BCR16-PC,CO-BCR16-VO,CO-BCR16-PO')
+BCRDataAPI::group_by(c('TransectNum', 'Point', 'Easting', 'Northing', 'Zone'))
+BCRDataAPI::filter_on('Stratum in CO-CFLRP-CF,CO-BCR16-RC,CO-BCR16-PC')
 grab <- BCRDataAPI::get_data()
-keep <- grab %>% unique
-write.csv(keep, "Bird_survey_point_coords.csv", row.names = F)
+write.csv(grab, "Bird_survey_point_coords.csv", row.names = F)
