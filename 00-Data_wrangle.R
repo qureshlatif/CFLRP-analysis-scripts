@@ -29,35 +29,26 @@ SampDesign <- c("IMBCR", "GRTS")
 #### Compile species list ####
 BCRDataAPI::reset_api()
 BCRDataAPI::set_api_server('192.168.137.180')
-BCRDataAPI::add_columns(c('Year|int',
-                          'primaryHabitat|str',
-                          'Stratum|str',
-                          'BirdCode|str',
+BCRDataAPI::add_columns(c('BirdCode|str',
                           'Species|str')
 )
 BCRDataAPI::filter_on('SelectionMethod in IMBCR,GRTS')
 BCRDataAPI::filter_on('Migrant = 0')
 BCRDataAPI::filter_on('BirdCode <> NOBI')
 BCRDataAPI::filter_on('BCR = 16')
+BCRDataAPI::filter_on('primaryHabitat in LP,MC,II,PP')
+BCRDataAPI::filter_on(str_c('Year in ', str_c(2008:2017, collapse = ",")))
+BCRDataAPI::group_by(c('BirdCode', 'Species'))
 grab <- BCRDataAPI::get_data()
 
-spp.list <- grab %>%
-  filter(Year %in% 2008:2017) %>%
-  filter(primaryHabitat %in% c("LP", "MC", "II", "PP")) %>% #II?
-  select(primaryHabitat, BirdCode, Species) %>%
-  unique %>%
+spp.out <- grab %>%
   filter(!str_sub(BirdCode, 1, 2) == "UN") %>%
   filter(!Species %in% spp.exclude)
 
 # Collapsing sub-species and renamed species #
 ss <- BCRDataAPI::subspecies()
-spp.list <- spp.list %>%
-  mutate(BirdCode = ss[BirdCode] %>% as.character)
-
-spp.out <- spp.list %>%
-  select(BirdCode, Species) %>%
-  unique
 spp.out <- spp.out %>%
+  mutate(BirdCode = ss[BirdCode] %>% as.character)%>%
   dplyr::group_by(BirdCode) %>%
   mutate(min_length = min(nchar(Species))) %>%
   mutate(Species = str_sub(Species, 1, min_length)) %>%
@@ -75,9 +66,7 @@ spp.out <- spp.out %>%
   arrange(tax_ord)
 
 spp.excluded <- grab %>%
-  filter(Year %in% 2008:2017) %>%
-  filter(primaryHabitat %in% c("LP", "MC", "II", "PP")) %>% #II?
-  select(primaryHabitat, BirdCode, Species) %>%
+  select(BirdCode, Species) %>%
   unique %>%
   filter(!str_sub(BirdCode, 1, 2) == "UN") %>%
   filter(Species %in% spp.exclude) %>%
@@ -136,8 +125,8 @@ pointXyears.list <- unique(str_c(grab$TransectNum,
                                          side = "left", pad = "0"),
                                  grab$Year, sep = "-")) %>% sort
 
-## Make sure all spp in data are in spp.list ##
-#grab$BirdCode[which(!grab$BirdCode %in% c(spp.list$BirdCode, spp.excluded$BirdCode))] %>% unique
+## Make sure all spp in data are in spp.out ##
+#grab$BirdCode[which(!grab$BirdCode %in% c(spp.out$BirdCode, spp.excluded$BirdCode))] %>% unique
 
 ## Add number of detections and count summaries to spp.out by stratum ##
 smry <- grab %>% select(BirdCode, TransectNum, Point, Year) %>%
@@ -186,10 +175,6 @@ bird_data <- grab %>%  # Store bird survey data for later use.
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year))
 
 #### Covariate data ####
-### Questions: ###
-# 1. Should we filter by primaryHabitat?
-# 2. Should we include NumSnags or RCOV_Dead as covariate?
-
 # Canopy data #
 BCRDataAPI::reset_api()
 BCRDataAPI::set_api_server('192.168.137.180')
@@ -232,44 +217,25 @@ grab <- BCRDataAPI::get_data() %>%
 #  unique %>% arrange(Species) %>%
 #  View
 
-veg_data <- grab %>%
-  select(Point_year, CanCov, CanHt, primaryHabitat, NumSnags) %>%
-  unique %>%
-  # Ponderosa pine cover #
+veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%
   left_join(grab %>%
-              filter(Species == "PP") %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RCOV_PP = Abundance), by = "Point_year") %>%
-  # Douglas fir cover #
+              select(Point_year, CanCov, CanHt, primaryHabitat, NumSnags) %>%
+              unique %>%
+              # Calculate forest indicator
+              mutate(Forest = (primaryHabitat %in% c("AS", "BU", "II", "LO", "LP", "MC", "OA", "PP", "SF")) %>% as.integer) %>%
+              select(-primaryHabitat), by = "Point_year") %>%
+  # Species group relative covers #
   left_join(grab %>%
-              filter(Species == "DF") %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RCOV_DF = Abundance), by = "Point_year") %>%
-  # Aspen cover #
-  left_join(grab %>%
-              filter(Species == "AS") %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RCOV_AS = Abundance), by = "Point_year") %>%
-  # Standing dead #
-  left_join(grab %>%
-              filter(Species %in% c("DC", "DD", "DA", "BC", "BD", "DJ")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RCOV_Dead = Abundance), by = "Point_year") %>%
+              reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
+              rename(RCOV_PP = PP, RCOV_DF = DF, RCOV_AS = AS) %>%
+              mutate(RCOV_Dead = DC + DD + DA + BC + BD + DJ) %>%
+              select(Point_year, RCOV_PP, RCOV_DF, RCOV_AS, RCOV_Dead), by = "Point_year") %>%
   # Everything else (Keep track of what the majority of this is.) #
   left_join(grab %>%
               filter(!Species %in% c("PP", "DF", "AS", "DC", "DD", "DA", "BC", "BD", "DJ")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RCOV_OT = Abundance), by = "Point_year") %>%
+              reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
+              mutate(RCOV_OT = select(., -Point_year) %>% apply(1, sum)) %>%
+              select(Point_year, RCOV_OT), by = "Point_year") %>%
   mutate_at(vars(RCOV_PP:RCOV_OT), funs(replace(.,is.na(.),0))) %>%
   mutate(RCOV_TOT = RCOV_PP + RCOV_DF + RCOV_AS + RCOV_Dead + RCOV_OT) %>%
   # RCOV_TOT values != 100 (n = 83) are within 10% of 100, so rescaling them to sum to 100.
@@ -314,14 +280,13 @@ grab <- BCRDataAPI::get_data() %>%
 # BF (buffaloberry), SA (sagebrush), NB (ninebark), SY (snowberry), BS (blue spruce), UD (unknown deciduous), SB (service berry), SU (subalpine fir),
 # MZ (manzanita), SK (skunkbrush), GO (Gambel oak), OT (other??), MS (mountain spray), HA (hawthorn), HB (huckleberry), BU (ragweed/bursage), AM (Apache plume),
 # RA (rabbitbrush), DC (dead conifer), AL (alder), TW (twinberry), BR (bristlecone pine), WB (water birch), UC (unknown conifer), SW (snakeweed), WF (white fir),
-# BC (burnt conifer), WN (winterfat), OG (Oregon-grape), RD (Red-osier dogwood), DD (dead deciduous), VI (Viburnum), TA (Tamarisk), CA (Ceanothus), SL (Saltbush),
+# BC (burnt conifer), WN (winterfat), RD (Red-osier dogwood), DD (dead deciduous), VI (Viburnum), TA (Tamarisk), CA (Ceanothus), SL (Saltbush),
 # PY (Pinyon pine), NC (narrow-leaf cottonwood), EB (elderberry), XX (not listed), DA (dead aspen), AP (American plum), PI (??), PC (Plains cottonwood),
 # GW (greasewood), SI (??), SE (single-leaf ash), OB (oak bush), LU (??), LT (??), DJ (dead juniper), CE (creosote), BI (birch), AH (ash)
 
   # Shrub categories:
-    # Juniper - c()
-    # Conifer ladder - c("CJ", "JU", "DJ", "DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF")
-    # Berry - c("GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB")
+    # Ladder fuels - c("CJ", "JU", "DJ", "DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF", "GO")
+    # Berry - c("GB", "SY", "BB", "CC", "SB", "TW", "HA", "EB")
     # Aspen - c("AS", "DA")
     # Xeric - c("CR", "MM", "WX", "YU", "BF", "SA", "MZ", "SK", "GO", "RA", "SL", "CE", "GW", "WN")
     # Mesic - c("WI", "WR", "AL", "WB", "PC", "BI", "TA", "NC", "RD")
@@ -335,51 +300,25 @@ shrub_data <- grab %>%
               mutate(p = Abundance / 100) %>%
               dplyr::group_by(Point_year) %>%
               summarise(ShrubDiv = -1*sum(p * log(p))), by = "Point_year") %>%
-  # Ladder fuel species #
+  # Species group relative covers #
   left_join(grab %>%
-              filter(Species %in% c("CJ", "JU", "DJ", "DF", "PP", "LP", "ES", "UC", "SU",
-                                    "BR", "DD", "BC", "PY", "BS", "LM", "WF", "GO")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RSCV_Ladder = Abundance), by = "Point_year") %>%
-  # Berry bushes #
-  left_join(grab %>%
-              filter(Species %in% c("GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RSCV_Ber = Abundance), by = "Point_year") %>%
-  # Aspen cover #
-  left_join(grab %>%
-              filter(Species %in% c("AS", "DA")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RSCV_AS = Abundance), by = "Point_year") %>%
-  # Xeric #
-  #left_join(grab %>%
-  #            filter(Species %in% c("CR", "MM", "WX", "YU", "BF", "SA", "MZ", "SK", "GO", "RA", "SL", "CE", "GW", "WN")) %>%
-  #            select(Point_year, Abundance) %>%
-  #            dplyr::group_by(Point_year) %>%
-  #            summarise(Abundance = sum(Abundance)) %>%
-  #            rename(RSCV_Xer = Abundance), by = "Point_year") %>%
-  # Mesic #
-  #left_join(grab %>%
-  #            filter(Species %in% c("WI", "WR", "AL", "WB", "PC", "BI", "TA", "NC", "RD")) %>%
-  #            select(Point_year, Abundance) %>%
-  #            dplyr::group_by(Point_year) %>%
-  #            summarise(Abundance = sum(Abundance)) %>%
-  #            rename(RSCV_Mes = Abundance), by = "Point_year") %>%
+              reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
+              rename(RSCV_AS = AS) %>%
+              mutate(RSCV_Ladder = CJ + JU + DJ + DF + PP + LP + ES + UC + SU +
+                       BR + DD + BC + PY + BS + LM + WF + GO + OB,
+                     RSCV_Ber = GB + SY + BB + CC + SB + TW + HA + EB) %>%
+              # Also considered but dropped:
+                # Xeric: CR + MM + WX + YU + BF + SA + MZ + SK + GO + RA + SL + CE + GW + WN
+                # Mesic: WI + WR + AL + WB + PC + BI + TA + NC + RD
+              select(Point_year, RSCV_Ladder, RSCV_Ber, RSCV_AS), by = "Point_year") %>%
   # Everything else #
   left_join(grab %>%
               filter(!Species %in% c("CJ", "JU", "DJ","DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF",
                                      "GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB",
                                      "AS", "DA")) %>%
-              select(Point_year, Abundance) %>%
-              dplyr::group_by(Point_year) %>%
-              summarise(Abundance = sum(Abundance)) %>%
-              rename(RSCV_OT = Abundance), by = "Point_year") %>%
+              reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
+              mutate(RSCV_OT = select(., -Point_year) %>% apply(1, sum)) %>%
+              select(Point_year, RSCV_OT), by = "Point_year") %>%
   mutate_at(vars(RSCV_Ladder:RSCV_OT), funs(replace(.,is.na(.),0))) %>%
   mutate(RCOV_TOT = RSCV_Ladder + RSCV_Ber + RSCV_AS + RSCV_OT) %>% # RSCV_Jun + RSCV_Xer + RSCV_Mes + 
   # Rescale where TOT within 10% of 100...
@@ -401,7 +340,7 @@ shrub_data <- grab %>%
   select(-RCOV_TOT)
 
 veg_data <- veg_data %>% left_join(shrub_data, by = "Point_year")
-rm(shrub_data)
+rm(shrub_data, grab)
 
 # Ground cover #
 BCRDataAPI::reset_api()
@@ -436,17 +375,24 @@ grab <- BCRDataAPI::get_data() %>%
   mutate(HerbGrass = LiveGrass + DeadGrass + Herb) %>%
   mutate(LGrassHt = replace(LGrassHt, which(LiveGrass == 0), 0),
          LGrassHt = replace(LGrassHt, which(is.na(LiveGrass)), NA),
+         LGrassHt = replace(LGrassHt, which(LGrassHt == -1), NA),
          DGrassHt = replace(DGrassHt, which(DeadGrass == 0), 0),
          DGrassHt = replace(DGrassHt, which(is.na(DeadGrass)), NA),
-         GrassHt = (LGrassHt * LiveGrass + DGrassHt * DeadGrass) / (LiveGrass + DeadGrass)) %>%
-  select(Point_year, HerbGrass, GrassHt)
+         DGrassHt = replace(DGrassHt, which(DGrassHt == -1), NA)) %>%
+  mutate(GrassHt = (LGrassHt * LiveGrass + DGrassHt * DeadGrass) / (LiveGrass + DeadGrass),
+         HerbGrassVol = ((HerbGrass / 100) * (pi * 50^2)) * # coverage in m^2
+           (GrassHt / 100)) %>% # ht in m^2
+  select(Point_year, HerbGrassVol)
 
 veg_data <- veg_data %>% left_join(grab, by = "Point_year")
 rm(grab)
 
-# Get treatment covariates #
-library(foreign)
-dat.gis <- read.dbf("C:/Users/Quresh.Latif/files/GIS/FS/CFLRP/Bird_survey_point_coords.dbf", as.is = T) %>%
+# Compile understory-overstory height ratio #
+veg_data <- veg_data %>%
+  mutate(SOHtRatio = ShrubHt / CanHt)
+
+# Get GIS covariates #
+dat.gis <- foreign::read.dbf("C:/Users/Quresh.Latif/files/GIS/FS/CFLRP/Bird_survey_point_coords.dbf", as.is = T) %>%
   tbl_df() %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == "Not treat*"), NA) %>% as.integer())
 dat.gis <- dat.gis %>%
@@ -462,7 +408,7 @@ dat.gis <- dat.gis %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
   mutate(Trt_time = Year - Trt_status) %>%
   mutate(Trt_time = replace(Trt_time, which(Trt_stat == 0), NA)) %>%
-  select(Point_year, Trt_stat, Trt_time)
+  select(Point_year, Trt_stat, Trt_time, TWIP)
 
 veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
 rm(dat.gis)
@@ -486,7 +432,7 @@ bird_data <- bird_data %>%
 
 ## Compile multidimensional detection data array ##
 spp.list <- spp.out$BirdCode
-cov.names <- c("gridIndex", "YearInd", "DayOfYear", "Time", names(veg_data)[-c(1, 4)])
+cov.names <- c("gridIndex", "YearInd", "DayOfYear", "Time", names(veg_data)[-1])
 
 bird_data <- bird_data %>%
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year))
@@ -519,11 +465,10 @@ Cov[ind.vals, -c(1:4)] <- veg_data %>%
   filter(Point_year %in% pointXyears.list) %>%
   arrange(Point_year) %>%
   select(-Point_year) %>%
-  select(-primaryHabitat) %>%
   as.matrix
 
 rm(ind.vals, obs, maxDetPossible, sp, ss, tvec)
 save.image("Data_compiled.RData")
 
 ## Correlation matrix ##
-Cov[, cov.names[-c(1:4, 11:12, 19, 23)]] %>% cor(use = "complete")
+Cov[, cov.names[-c(1:4, 12:13, 20, 25)]] %>% cor(use = "complete")
