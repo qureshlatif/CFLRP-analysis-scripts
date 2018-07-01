@@ -65,6 +65,10 @@ spp.out <- spp.out %>%
   select(tax_ord, BirdCode, common_name, species) %>%
   arrange(tax_ord)
 
+# Remove additional implausible members of the metacommunity (based on review of BNA range maps and habitat accounts) #
+spp.out <- spp.out %>%
+  filter(!BirdCode %in% c("RUHU", "PAWR", "OLWA", "AMPI", "WWCR", "SAGS"))
+
 spp.excluded <- grab %>%
   select(BirdCode, Species) %>%
   unique %>%
@@ -101,6 +105,7 @@ BCRDataAPI::add_columns(c('TransectNum|str',
 BCRDataAPI::filter_on(str_c('Stratum in ', str_c(strata, collapse = ",")))
 BCRDataAPI::filter_on(str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")))
 BCRDataAPI::filter_on('Year in 2014,2015,2016')
+BCRDataAPI::filter_on(str_c('BirdCode in ', str_c(spp.out$BirdCode, collapse = ",")))
 BCRDataAPI::filter_on('ninetynine = 0')
 BCRDataAPI::filter_on('eightyeight = 0')
 BCRDataAPI::filter_on('How <> F')
@@ -108,7 +113,7 @@ BCRDataAPI::filter_on('Sex <> J')
 BCRDataAPI::filter_on('Migrant = 0')
 BCRDataAPI::filter_on('TimePeriod > -1')
 BCRDataAPI::filter_on('radialDistance < 125')
-grab <- BCRDataAPI::get_data() %>%
+grab <- BCRDataAPI::get_data(interpolate_effort = T) %>%
   mutate(BirdCode = ss[BirdCode] %>% as.character)
 
 point.coords <- grab %>%
@@ -124,9 +129,6 @@ pointXyears.list <- unique(str_c(grab$TransectNum,
                                  str_pad(grab$Point, width = 2,
                                          side = "left", pad = "0"),
                                  grab$Year, sep = "-")) %>% sort
-
-## Make sure all spp in data are in spp.out ##
-#grab$BirdCode[which(!grab$BirdCode %in% c(spp.out$BirdCode, spp.excluded$BirdCode))] %>% unique
 
 ## Add number of detections and count summaries to spp.out by stratum ##
 smry <- grab %>% select(BirdCode, TransectNum, Point, Year) %>%
