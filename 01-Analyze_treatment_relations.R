@@ -2,12 +2,12 @@ library(jagsUI)
 library(stringr)
 library(dplyr)
 
-#setwd("/home/RMBO.LOCAL/quresh.latif/CPW_beetle")
+#setwd("/home/RMBO.LOCAL/quresh.latif/CFLRP")
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #### Script inputs ####
-model.file <- "CFLRP-analysis-scripts/model_treatment.jags"
+model.file <- "model_treatment.jags"
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp", "Trt.b",
@@ -36,15 +36,18 @@ parameters <- c("omega", "rho.ab", "rho.bd",
 # Function for setting initial values in JAGS
 inits <- function()
   list(z=z.init, u=u.init, w=w.init, tvar.sigma.a0 = rnorm(1), tvar.sigma.b0 = rnorm(1), tvar.sigma.d0 = rnorm(1),
+       tvar.Betad.pers = rnorm(1),
        tvar.Betad.PctTrt = rnorm(1), tvar.Betad.YST = rnorm(1), tvar.Betad.TWIP = rnorm(1),
        tvar.Betab.Trt = rnorm(1), tvar.Betab.YST = rnorm(1), tvar.Betab.TWIP = rnorm(1),
-       tvar.Betaa.Time = rnorm(1), tvar.Betaa.DOY = rnorm(1), tvar.Betaa.CCov = rnorm(1), tvar.Betaa.SHCov = rnorm(1))
+       tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
+       tvar.Betaa.DOY = rnorm(1), tvar.Betaa.DOY2 = rnorm(1),
+       tvar.Betaa.CCov = rnorm(1), tvar.Betaa.SHVol = rnorm(1))
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 1 #1000 # burn in
-ni <- 2 #15000 # number of iterations
-nt <- 1 #10 # thinning
+nb <- 1000 # burn in
+ni <- 15000 # number of iterations
+nt <- 10 # thinning
 
 save.out <- "mod_treatment"
 ##########################
@@ -96,12 +99,10 @@ dimnames(u.init) <- NULL
 z.init <- array(NA, dim = c(n.grid, n.spp, n.year))
 for(sp in 1:n.spp) {
   for(t in 1:n.year) {
-    vals <- tapply(u.init[, sp], str_c(gridID, yearID, sep = " "), max)
-    vals <- vals[which(str_sub(names(vals), -1, -1) == t)] 
-    z.init[(str_sub(names(vals), 1, -3) %>% as.integer), sp, t] <- vals
+    vals <- tapply(u.init[, sp], gridID, max)
+    z.init[, sp, t] <- vals
   }
 }
-z.init[which(is.na(z.init))] <- purrr::rbernoulli(sum(is.na(z.init)))
 w.init <- apply(Y, 2, max) %>% as.integer
 
 # Fit model
