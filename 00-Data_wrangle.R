@@ -410,7 +410,8 @@ dat.gis <- dat.gis %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
   mutate(Trt_time = Year - Trt_status) %>%
   mutate(Trt_time = replace(Trt_time, which(Trt_stat == 0), NA)) %>%
-  select(Point_year, Trt_stat, Trt_time, TWIP)
+  select(Point_year, Trt_stat, Trt_time, TWIP, Rdens_1km) %>%
+  rename(Rdens = Rdens_1km)
 
 veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
 rm(dat.gis)
@@ -473,4 +474,4 @@ rm(ind.vals, obs, maxDetPossible, sp, ss, tvec)
 save.image("Data_compiled.RData")
 
 ## Correlation matrix ##
-Cov[, cov.names[-c(1:4, 12:13, 20, 25)]] %>% cor(use = "complete")
+Cov[, cov.names[-c(1:4, 12:13, 20, 24)]] %>% cor(use = "complete")
