@@ -74,9 +74,9 @@ model {
   tvar.Betaa.DOY ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betaa.DOY <- abs(tvar.Betaa.DOY) # half-Cauchy distribution
 
-  Betaa.DOY2 ~ dt(0, pow(t.sigma,-2), t.nu)
-  tvar.Betaa.DOY2 ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betaa.DOY2 <- abs(tvar.Betaa.DOY2) # half-Cauchy distribution
+  # Betaa.DOY2 ~ dt(0, pow(t.sigma,-2), t.nu)
+  # tvar.Betaa.DOY2 ~ dt(0,1,1)  # Cauchy distribution
+  # sigma.Betaa.DOY2 <- abs(tvar.Betaa.DOY2) # half-Cauchy distribution
 
   Betaa.CCov ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betaa.CCov ~ dt(0,1,1)  # Cauchy distribution
@@ -115,7 +115,7 @@ model {
     ba.Time[i] ~ dnorm(Betaa.Time, pow(sigma.Betaa.Time, -2))
     ba.Time2[i] ~ dnorm(Betaa.Time2, pow(sigma.Betaa.Time2, -2))
     ba.DOY[i] ~ dnorm(Betaa.DOY, pow(sigma.Betaa.DOY, -2))
-    ba.DOY2[i] ~ dnorm(Betaa.DOY2, pow(sigma.Betaa.DOY2, -2))
+    # ba.DOY2[i] ~ dnorm(Betaa.DOY2, pow(sigma.Betaa.DOY2, -2))
     ba.ccov[i] ~ dnorm(Betaa.CCov, pow(sigma.Betaa.CCov, -2))
     ba.shvol[i] ~ dnorm(Betaa.SHVol, pow(sigma.Betaa.SHVol, -2))
 
@@ -131,10 +131,10 @@ model {
 
     for(j in 1:n.point_year) {
       logit(theta[j, i]) <- b0[i] + bb.trt[i]*Trt.b[j] + bb.YST[i]*YST.b[j]
-      u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
+        u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
       
       logit(p[j, i]) <- a0[i] + ba.Time[i]*Time.b[j] + ba.Time2[i]*pow(Time.b[j], 2) +
-        ba.DOY[i]*DOY.b[j] + ba.DOY2[i]*pow(DOY.b[j], 2) +
+        ba.DOY[i]*DOY.b[j] + #ba.DOY2[i]*pow(DOY.b[j], 2) +
         ba.ccov[i]*ccov.b[j]*(1-ccov.b.missing[j]) + ba.ccov[i]*ccov.b.imp[j]*ccov.b.missing[j] +
         ba.shvol[i]*shvol.b[j]*(1-shvol.b.missing[j]) + ba.shvol[i]*shvol.b.imp[j]*shvol.b.missing[j]
       Y[j, i] ~ dbinom(p[j, i]*u[j, i], TPeriod[j, i])

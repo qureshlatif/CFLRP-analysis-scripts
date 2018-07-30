@@ -295,7 +295,8 @@ grab <- BCRDataAPI::get_data() %>%
     # Other (left out) - c("MA", "SC", "NB", "UD", "OT", "MS", "HA", "BU", "AM", "SW", "DD", "VI", "CA", "XX", "AP", "PI", "SI", "SE", "OB", "LU", "LT", "AH")
 
 shrub_data <- grab %>%
-  select(Point_year, shrub_cover, ShrubHt) %>%
+  mutate(ShrubVol = (((shrub_cover / 100) * pi * 50^2) * ShrubHt) ^ (1/3)) %>%
+  select(Point_year, shrub_cover, ShrubHt, ShrubVol) %>%
   unique %>%
   # Shrub diversity #
   left_join(grab %>%
@@ -341,8 +342,16 @@ shrub_data <- grab %>%
   mutate(RSCV_OT = replace(RSCV_OT, which(RCOV_TOT < 90 | RCOV_TOT > 110), NA)) %>%
   select(-RCOV_TOT)
 
+# Impute missing shrub volume values based on shrub cover #
+mod <- lm(ShrubVol ~ shrub_cover + I(shrub_cover^2), data = shrub_data)
+ind.missing <- which(is.na(shrub_data$ShrubVol))
+shrub_data$ShrubVol[ind.missing] <- predict(mod, shrub_data %>% filter(is.na(ShrubVol)))
+
+shrub_data <- shrub_data %>%
+  select(-shrub_cover)
+
 veg_data <- veg_data %>% left_join(shrub_data, by = "Point_year")
-rm(shrub_data, grab)
+rm(shrub_data, grab, ind.missing, mod)
 
 # Ground cover #
 BCRDataAPI::reset_api()
@@ -382,16 +391,26 @@ grab <- BCRDataAPI::get_data() %>%
          DGrassHt = replace(DGrassHt, which(is.na(DeadGrass)), NA),
          DGrassHt = replace(DGrassHt, which(DGrassHt == -1), NA)) %>%
   mutate(GrassHt = (LGrassHt * LiveGrass + DGrassHt * DeadGrass) / (LiveGrass + DeadGrass),
-         HerbGrassVol = ((HerbGrass / 100) * (pi * 50^2)) * # coverage in m^2
-           (GrassHt / 100)) %>% # ht in m^2
-  select(Point_year, HerbGrassVol)
+         HerbGrassVol = (((HerbGrass / 100) * (pi * 50^2)) * # coverage in m^2
+           (GrassHt / 100))^(1/3)) %>% # ht in m
+  select(Point_year, HerbGrass, GrassHt, HerbGrassVol) %>%
+  mutate(HerbGrassVol = replace(HerbGrassVol, which(HerbGrass == 0), 0))
+
+# Impute missing shrub volume values based on shrub cover #
+mod <- lm(HerbGrassVol ~ HerbGrass + I(HerbGrass^2), data = grab)
+ind.missing <- which(is.na(grab$HerbGrassVol))
+grab$HerbGrassVol[ind.missing] <- predict(mod, grab %>% filter(is.na(HerbGrassVol)))
+
+grab <- grab %>%
+  select(-one_of("HerbGrass", "GrassHt"))
 
 veg_data <- veg_data %>% left_join(grab, by = "Point_year")
-rm(grab)
+rm(grab, mod, ind.missing)
 
 # Compile understory-overstory height ratio #
 veg_data <- veg_data %>%
-  mutate(SOHtRatio = ShrubHt / CanHt)
+  mutate(SOHtRatio = ShrubHt / CanHt) %>%
+  select(-ShrubHt)
 
 # Get GIS covariates #
 dat.gis <- foreign::read.dbf("C:/Users/Quresh.Latif/files/GIS/FS/CFLRP/Bird_survey_point_coords.dbf", as.is = T) %>%
@@ -405,7 +424,7 @@ dat.gis <- dat.gis %>%
               mutate(Year = 2016)) %>%
   mutate(Point_year = str_c(TransectNu, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
   mutate(Trt_status = replace(Trt_status, which(is.na(Trt_status)), 9999)) %>%
-  mutate(Trt_stat = (Year >= Trt_status) %>% as.integer)
+  mutate(Trt_stat = (Year > Trt_status) %>% as.integer)
 dat.gis <- dat.gis %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
   mutate(Trt_time = Year - Trt_status) %>%
@@ -415,6 +434,52 @@ dat.gis <- dat.gis %>%
 
 veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
 rm(dat.gis)
+
+# Get grid-level landscape structure (LANDFIRE) covariates #
+landscape_data <- data.frame(Grid = pointXyears.list %>% str_sub(1, -9),
+                             Year = pointXyears.list %>% str_sub(-4, -1), stringsAsFactors = F) %>%
+  mutate(gridIndex = Grid %>% as.factor %>% as.integer,
+         YearInd = Year %>% as.factor %>% as.integer) %>%
+  unique
+
+PA_data <- read.csv("LANDFIRE_vars/CFLRP Percent Areas 2014.csv", header = T, stringsAsFactors = F) %>%
+  tbl_df %>%
+  mutate(Year = "2014") %>%
+  bind_rows(
+    read.csv("LANDFIRE_vars/CFLRP Percent Areas 2015.csv", header = T, stringsAsFactors = F) %>%
+      tbl_df %>%
+      mutate(Year = "2015")
+  ) %>%
+  bind_rows(
+    read.csv("LANDFIRE_vars/CFLRP Percent Areas 2016.csv", header = T, stringsAsFactors = F) %>%
+      tbl_df %>%
+      mutate(Year = "2016")
+  ) %>%
+  rename(PACC10_3km = Gap_3km_square,
+         PACC40_3km = Open_3km_square,
+         PACC10_2km = Gap_2km_circle,
+         PACC40_2km = Open_2km_circle)
+
+landscape_data <- landscape_data %>%
+  left_join(
+    PA_data %>%
+      select(TransectNum, Year, PACC10_3km, PACC40_3km),
+    by = c("Grid" = "TransectNum", "Year" = "Year")
+  ) %>%
+  left_join(read.csv("LANDFIRE_vars/Patch_struct_&_config.csv", header = T, stringsAsFactors = F) %>%
+              tbl_df %>%
+              mutate(Year = as.character(Year),
+                     # Rescale area and distance covariates to ha and km
+                     mnPtchAr_Gap2km = mnPtchAr_Gap2km / 10000,
+                     mnPtchAr_Opn2km = mnPtchAr_Opn2km / 10000,
+                     mnPtchAr_Gap3km = mnPtchAr_Gap3km / 10000,
+                     mnPtchAr_Opn3km = mnPtchAr_Opn3km / 10000,
+                     NNdist_Gap2km = NNdist_Gap2km / 1000,
+                     NNdist_Opn2km = NNdist_Opn2km / 1000,
+                     NNdist_Gap3km = NNdist_Gap3km / 1000,
+                     NNdist_Opn3km = NNdist_Opn3km / 1000),
+            by = c("Grid" = "TransNum", "Year" = "Year"))
+rm(PA_data)
 
 ## Trim dates, compile day of year & start time in minutes ##
 library(timeDate)

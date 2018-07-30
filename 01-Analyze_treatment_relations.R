@@ -25,7 +25,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "Betad.TWIP", "sigma.Betad.TWIP","Betad.Rdens", "sigma.Betad.Rdens",
                 "Betab.Trt", "sigma.Betab.Trt", "Betab.YST", "sigma.Betab.YST",
                 "Betaa.Time", "sigma.Betaa.Time", "Betaa.Time2", "sigma.Betaa.Time2",
-                "Betaa.DOY", "sigma.Betaa.DOY", "Betaa.DOY2", "sigma.Betaa.DOY2",
+                "Betaa.DOY", "sigma.Betaa.DOY", # "Betaa.DOY2", "sigma.Betaa.DOY2",
                 "Betaa.CCov", "sigma.Betaa.CCov",
                 "Betaa.SHVol", "sigma.Betaa.SHVol",
                 
@@ -34,7 +34,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "bd.pers", # For persistence effect
                 "bd.ptrt", "bd.YST", "bd.TWIP", "bd.Rdens",
                 "bb.trt", "bb.YST",
-                "ba.Time", "ba.Time2", "ba.DOY", "ba.DOY2", "ba.ccov", "ba.shvol")
+                "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol") # "ba.DOY2", 
 
 # Function for setting initial values in JAGS
 inits <- function()
@@ -44,7 +44,7 @@ inits <- function()
        tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1),
        tvar.Betab.Trt = rnorm(1), tvar.Betab.YST = rnorm(1),
        tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
-       tvar.Betaa.DOY = rnorm(1), tvar.Betaa.DOY2 = rnorm(1),
+       tvar.Betaa.DOY = rnorm(1), #tvar.Betaa.DOY2 = rnorm(1),
        tvar.Betaa.CCov = rnorm(1), tvar.Betaa.SHVol = rnorm(1))
 
 # MCMC values
@@ -94,7 +94,7 @@ ccov.sd[which(ccov.sd == 0)] <- sd(ccov.b, na.rm = T) # Zeros won't work for SD!
 ccov.b.missing <- is.na(ccov.b) %>% as.integer # Index missing values to be imputed
 ccov.b[is.na(ccov.b)] <- 0
 
-shvol.b <- (Cov[, "shrub_cover"] / 100) * (pi * 50^2) * Cov[, "ShrubHt"] %>% # area covered X volume
+shvol.b <- ((Cov[, "shrub_cover"] / 100) * (pi * 50^2) * Cov[, "ShrubHt"]) %>% # area covered X volume
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 shvol.means <- tapply(shvol.b, gridID, mean, na.rm = T) # Grid-level means for imputing missing values
 shvol.sd <- tapply(shvol.b, gridID, sd, na.rm = T) # Grid-level SDs for imputing missing values
