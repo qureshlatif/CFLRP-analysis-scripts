@@ -146,6 +146,6 @@ model {
     }
   }
   for(j in 1:n.point_year) {
-    sr.point[j] <- sum(u[j, ])
+    SR.point[j] <- sum(u[j, ])
   }
 }

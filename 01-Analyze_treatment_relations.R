@@ -34,7 +34,9 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "bd.pers", # For persistence effect
                 "bd.ptrt", "bd.YST", "bd.TWIP", "bd.Rdens",
                 "bb.trt", "bb.YST",
-                "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol") # "ba.DOY2", 
+                "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol", # "ba.DOY2",
+                
+                "SR.grid", "SR.point")
 
 # Function for setting initial values in JAGS
 inits <- function()
