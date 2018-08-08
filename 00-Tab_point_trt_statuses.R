@@ -1,12 +1,13 @@
 library(foreign)
 library(dplyr)
 library(stringr)
+setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 
-dat <- read.dbf("C:/Users/Quresh.Latif/files/GIS/FS/CFLRP/Bird_survey_point_coords.dbf", as.is = T) %>%
+dat <- read.dbf("Bird_survey_point_coords.dbf", as.is = T) %>%
   mutate(Point = str_c(TransectNu, "-", Point %>% str_pad("0", width = 2, side = "left"))) %>%
   mutate(SuperStrat = str_sub(TransectNu, 1, 8))
 
-# Summary tables #
+# Treatment status by year surveyed and strata #
 sum.point <- dat %>%
   summarize(Trt_CFLRP = sum(Trt_status <= 2014 & SuperStrat == "CO-CFLRP", na.rm = T),
             Cnt_CFLRP = sum(Trt_status > 2014 & SuperStrat == "CO-CFLRP", na.rm = T) +
@@ -69,4 +70,45 @@ sum.table <- sum.grid %>%
               mutate(Level = "Point")) %>%
   select(Level, Year:Cnt_IMBCR)
 
-write.csv(sum.table, "C:/Users/Quresh.Latif/files/projects/FS/CFLRP/Treatment_sampling_summary.csv", row.names = F)
+write.csv(sum.table, "Treatment_sampling_summary.csv", row.names = F)
+
+#### Tabulate sample sizes by treatment status and timing ####
+load("Data_compiled.RData")
+
+dat <- Cov %>% tbl_df %>%
+  mutate(Point = row.names(Cov)) %>%
+  select(Point, gridIndex:Rdens)
+
+rows <- c("Untreated", "Treated", str_c("Trt_yr", sort(unique(dat$Trt_time))))
+cols <- c("n.point", "n.grid")
+out <- matrix(NA, nrow = length(rows), ncol = length(cols),
+              dimnames = list(rows, cols))
+
+out["Untreated", ] <- c(
+  sum(dat$Trt_stat == 0),
+  sum(tapply(dat$Trt_stat, dat$gridIndex, function(x) any(x == 0)))
+)
+
+out["Treated", ] <- c(
+  sum(dat$Trt_stat == 1),
+  sum(tapply(dat$Trt_stat, dat$gridIndex, function(x) any(x == 1)))
+)
+
+for(i in sort(unique(dat$Trt_time))) 
+  out[str_c("Trt_yr", i), ] <- c(
+    sum(dat$Trt_time == i, na.rm = T),
+    sum(tapply(dat$Trt_time, dat$gridIndex, function(x) any(x == i, na.rm = T)))
+  )
+
+out %>% tbl_df %>%
+  mutate(Status = row.names(out)) %>%
+  mutate(n = str_c(n.point, "(", n.grid, ")")) %>%
+  select(Status, n) %>%
+  write.csv("Sample_size_table.csv", row.names = F)
+
+# Adjust data following review of this figure
+dat.LP <- dat.LP %>%
+  mutate(YSO = replace(YSO, which(Outbreak == 0), -1))
+
+dat.SF <- dat.SF %>%
+  mutate(YSO = replace(YSO, which(Outbreak == 0), -1))

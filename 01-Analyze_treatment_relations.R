@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #### Script inputs ####
-model.file <- "model_treatment_d0yr.jags"
+model.file <- "model_habitat_d0yr.jags"
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
