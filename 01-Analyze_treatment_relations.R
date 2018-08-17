@@ -7,14 +7,12 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #### Script inputs ####
-model.file <- "model_habitat_d0yr.jags"
+model.file <- "model_treatment_d0yr.jags"
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
              "Trt.b","PctTrt.d", "YST.b", "YST.d", "TWIP.d","Rdens.d",
-             "DOY.b", "Time.b",
-             "ccov.b", "ccov.means", "ccov.sd", "ccov.b.missing",
-             "shvol.b", "shvol.means", "shvol.sd", "shvol.b.missing")
+             "DOY.b", "Time.b")
 
 # Stuff to save from JAGS
 parameters <- c("omega", "rho.ab", "rho.bd",
@@ -26,15 +24,14 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "Betab.Trt", "sigma.Betab.Trt", "Betab.YST", "sigma.Betab.YST",
                 "Betaa.Time", "sigma.Betaa.Time", "Betaa.Time2", "sigma.Betaa.Time2",
                 "Betaa.DOY", "sigma.Betaa.DOY", # "Betaa.DOY2", "sigma.Betaa.DOY2",
-                "Betaa.CCov", "sigma.Betaa.CCov",
-                "Betaa.SHVol", "sigma.Betaa.SHVol",
+                "Betaa.Trt", "sigma.Betaa.Trt", "Betaa.YST", "sigma.Betaa.YST",
                 
                 "d0", "b0", "a0",
                 "bd.yr", # For year effect
-                "bd.pers", # For persistence effect
+                #"bd.pers", # For persistence effect
                 "bd.ptrt", "bd.YST", "bd.TWIP", "bd.Rdens",
                 "bb.trt", "bb.YST",
-                "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol", # "ba.DOY2",
+                "ba.Time", "ba.Time2", "ba.DOY", "ba.trt", "ba.YST", # "ba.DOY2",
                 
                 "SR.grid", "SR.point")
 
@@ -47,7 +44,7 @@ inits <- function()
        tvar.Betab.Trt = rnorm(1), tvar.Betab.YST = rnorm(1),
        tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
        tvar.Betaa.DOY = rnorm(1), #tvar.Betaa.DOY2 = rnorm(1),
-       tvar.Betaa.CCov = rnorm(1), tvar.Betaa.SHVol = rnorm(1))
+       tvar.Betaa.Trt = rnorm(1), tvar.Betaa.YST = rnorm(1))
 
 # MCMC values
 nc <- 3 # number of chains
@@ -88,20 +85,6 @@ Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level valu
 DOY.b <- Cov[, "DayOfYear"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 
 Time.b <- Cov[, "Time"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
-
-ccov.b <- Cov[, "CanCov"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
-ccov.means <- tapply(ccov.b, gridID, mean, na.rm = T) # Grid-level means for imputing missing values
-ccov.sd <- tapply(ccov.b, gridID, sd, na.rm = T) # Grid-level SDs for imputing missing values
-ccov.sd[which(ccov.sd == 0)] <- sd(ccov.b, na.rm = T) # Zeros won't work for SD!
-ccov.b.missing <- is.na(ccov.b) %>% as.integer # Index missing values to be imputed
-ccov.b[is.na(ccov.b)] <- 0
-
-shvol.b <- ((Cov[, "shrub_cover"] / 100) * (pi * 50^2) * Cov[, "ShrubHt"]) %>% # area covered X volume
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
-shvol.means <- tapply(shvol.b, gridID, mean, na.rm = T) # Grid-level means for imputing missing values
-shvol.sd <- tapply(shvol.b, gridID, sd, na.rm = T) # Grid-level SDs for imputing missing values
-shvol.b.missing <- is.na(shvol.b) %>% as.integer # Index missing values to be imputed
-shvol.b[is.na(shvol.b)] <- 0
 
 # Assemble the initial values for JAGS.
 u.init <- Y

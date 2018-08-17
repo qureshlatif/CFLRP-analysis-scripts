@@ -102,17 +102,19 @@ BCRDataAPI::add_columns(c('TransectNum|str',
                           'TimePeriod|int'
 ))
 
-BCRDataAPI::filter_on(str_c('Stratum in ', str_c(strata, collapse = ",")))
-BCRDataAPI::filter_on(str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")))
-BCRDataAPI::filter_on('Year in 2014,2015,2016')
-BCRDataAPI::filter_on(str_c('BirdCode in ', str_c(spp.out$BirdCode, collapse = ",")))
-BCRDataAPI::filter_on('ninetynine = 0')
-BCRDataAPI::filter_on('eightyeight = 0')
-BCRDataAPI::filter_on('How <> F')
-BCRDataAPI::filter_on('Sex <> J')
-BCRDataAPI::filter_on('Migrant = 0')
-BCRDataAPI::filter_on('TimePeriod > -1')
-BCRDataAPI::filter_on('radialDistance < 125')
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        'Year in 2014,2015,2016',
+                        str_c('BirdCode in ', str_c(spp.out$BirdCode, collapse = ",")),
+                        'TransectVisitExcludeAnalysis = FALSE',
+                        'TransectExcludeAnalysis = FALSE',
+                        'ninetynine = 0',
+                        'eightyeight = 0',
+                        'How <> F',
+                        'Sex <> J',
+                        'Migrant = 0',
+                        'TimePeriod > -1',
+                        'radialDistance < 125'))
 grab <- BCRDataAPI::get_data(interpolate_effort = T) %>%
   mutate(BirdCode = ss[BirdCode] %>% as.character)
 

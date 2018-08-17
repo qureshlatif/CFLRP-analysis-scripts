@@ -78,20 +78,14 @@ model {
   # tvar.Betaa.DOY2 ~ dt(0,1,1)  # Cauchy distribution
   # sigma.Betaa.DOY2 <- abs(tvar.Betaa.DOY2) # half-Cauchy distribution
 
-  Betaa.CCov ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betaa.CCov ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betaa.CCov <- abs(tvar.Betaa.CCov) # half-Cauchy distribution
+  Betaa.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.Trt ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Trt <- abs(tvar.Betaa.Trt) # half-Cauchy distribution
 
-  Betaa.SHVol ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betaa.SHVol ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betaa.SHVol <- abs(tvar.Betaa.SHVol) # half-Cauchy distribution
+  Betaa.YST ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.YST ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.YST <- abs(tvar.Betaa.YST) # half-Cauchy distribution
 
-  # Impute missing data
-  for(j in 1:n.point_year) {
-    ccov.b.imp[j] ~ dnorm(ccov.means[gridID[j]], pow(ccov.sd[gridID[j]], -2))
-    shvol.b.imp[j] ~ dnorm(shvol.means[gridID[j]], pow(shvol.sd[gridID[j]], -2))
-  }
-  
   for (i in 1:n.spp) {
     for(t in 1:n.year) {
       d0[i, t] ~ dnorm(delta0[t], pow(sigma.d0[t], -2))
@@ -116,8 +110,8 @@ model {
     ba.Time2[i] ~ dnorm(Betaa.Time2, pow(sigma.Betaa.Time2, -2))
     ba.DOY[i] ~ dnorm(Betaa.DOY, pow(sigma.Betaa.DOY, -2))
     # ba.DOY2[i] ~ dnorm(Betaa.DOY2, pow(sigma.Betaa.DOY2, -2))
-    ba.ccov[i] ~ dnorm(Betaa.CCov, pow(sigma.Betaa.CCov, -2))
-    ba.shvol[i] ~ dnorm(Betaa.SHVol, pow(sigma.Betaa.SHVol, -2))
+    ba.trt[i] ~ dnorm(Betaa.Trt, pow(sigma.Betaa.Trt, -2))
+    ba.YST[i] ~ dnorm(Betaa.YST, pow(sigma.Betaa.YST, -2))
 
     # state processes
     w[i] ~ dbern(omega)
@@ -135,8 +129,7 @@ model {
       
       logit(p[j, i]) <- a0[i] + ba.Time[i]*Time.b[j] + ba.Time2[i]*pow(Time.b[j], 2) +
         ba.DOY[i]*DOY.b[j] + #ba.DOY2[i]*pow(DOY.b[j], 2) +
-        ba.ccov[i]*ccov.b[j]*(1-ccov.b.missing[j]) + ba.ccov[i]*ccov.b.imp[j]*ccov.b.missing[j] +
-        ba.shvol[i]*shvol.b[j]*(1-shvol.b.missing[j]) + ba.shvol[i]*shvol.b.imp[j]*shvol.b.missing[j]
+        ba.trt[i]*Trt.b[j]*Trt.b[j] + ba.YST[i]*YST.b[j]
       Y[j, i] ~ dbinom(p[j, i]*u[j, i], TPeriod[j, i])
     }
   }

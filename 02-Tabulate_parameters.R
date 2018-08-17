@@ -18,6 +18,7 @@ params <- c("d0.1", "d0.2", "d0.3",
             "ba.Time",
             "ba.Time2",
             "ba.DOY",
+            "ba.ccov",
             "ba.shvol")
 out.vals <- c("est", "f")
 #______________________________________#

@@ -1,0 +1,86 @@
+    model{
+      
+      # Need to supply:
+        # Y, area.band, area.prop, breaks, dclass, nG, nInd, nPoint, gridID, nGrid
+        # detection covariates: Time.b, DOY.b, ccov.b, shcov.b 
+        # point-level abundance covariates: trt.b, YST.b, TWIP.b, Rdens.b
+        # For imputing missing values: ccov.means, ccov.sd, ccov.b.missing, shvol.means, shvol.sd, shvol.b.missing
+
+      # Prior on hazard rate parameters
+      a0 ~ dnorm(0, 0.1)
+      a.Time ~ dnorm(0, 0.1)
+      a.Time2 ~ dnorm(0, 0.1)
+      a.DOY ~ dnorm(0, 0.1)
+      a.DOY2 ~ dnorm(0, 0.1)
+      a.trt ~ dnorm(0, 0.1)
+      a.YST ~ dnorm(0, 0.1)
+      b ~ dunif(0, 100)
+
+      # Priors on lambda
+      bd.TWIP ~ dnorm(0, 0.1)
+      bd.RDens ~ dnorm(0, 0.1)
+
+      beta0.mean ~ dnorm(0, 0.1)
+      beta0.sd ~ dunif(0, 10)
+      beta0.tau <- pow(beta0.sd, -2)
+
+      for(t in 1:n.year) {
+        for(g in 1:nGrid) {
+          beta00[g, t] ~ dnorm(beta0.mean, beta0.tau)
+          beta0[g, t] <- beta00[g, t] + bd.TWIP*TWIP.d[g] + bd.RDens*RDens.d[g]
+        }
+      }
+
+      bl.trt ~ dnorm(0, 0.1)
+      bl.YST ~ dnorm(0, 0.1)
+
+      # Sample cluster sizes #
+      gam.r <- pow(mean.cl - 1, 2) / pow(sd.cl, 2)
+      gam.lam <- (mean.cl - 1) / pow(sd.cl, 2)
+      cl ~ dgamma(gam.r, gam.lam)
+      cl.size <- cl + 1
+
+      ### Point-level loop
+      for(j in 1:nPoint) {
+        ## Abundance model
+        log(lambda[j]) <- beta0[gridID[j], yearID[j]] + # Add point-level abundance covariates here
+          bl.trt*trt.b[j] + bl.YST*YST.b[j]
+        N[j] ~ dpois(lambda[j])
+        Y[j] ~ dbin(pcap[j], N[j]) # Observation model
+        #D[j] ~ (N[j] * cl.size) / area.circle # If desired, but can also be done later in R.
+        
+        #_______ For GOF based on deviance ________#
+        Y.new[j] ~ dbin(pcap[j], N[j]) # Simulate predicted data
+        
+        LLsim[j] <- logfact(N[j]) - logfact(Y.new[j]) + logfact(N[j] - Y.new[j]) + #log-likelihood for simulated data
+          log(pcap[j])*Y.new[j] + N[j]*log(1 - pcap[j]) - Y.new[j]*log(1 - pcap[j])
+        LL[j] <- logfact(N[j]) - logfact(Y[j]) + logfact(N[j] - Y[j]) + #log-likelihood for observed data
+          log(pcap[j])*Y[j] + N[j]*log(1 - pcap[j]) - Y[j]*log(1 - pcap[j])
+        #__________________________________________#
+        
+        ## Detection parameters
+        log(a[j]) <- a0 + a.Time*Time.b[j] + a.Time2*pow(Time.b[j], 2) + # Add detection covariates here.
+          a.DOY*DOY.b[j] + a.DOY2*pow(DOY.b[j], 2) +
+          a.trt*trt.b[j] + a.YST*YST.b[j]
+        for(k in 1:nG) {
+          p[j, k] <- 1 - exp(-pow(((breaks[k] + breaks[k + 1]) / 2) / a[j], -b))
+          pi[j, k] <- p[j, k] * area.prop[k]
+          pic[j, k] <- pi[j, k] / pcap[j]
+        }
+        pcap[j] <- sum(pi[j, ])
+      }
+      
+      ### Multi-nomial portion of detection model (Loop over detected individuals)
+      for(i in 1:nInd) { # multi-nomial portion of detection model
+        dclass[i, 3] ~ dcat(pic[dclass[i, 1], 1:nG])
+      }
+
+      #_______ Bayesian GOF based on deviance ________#
+      #deviance
+      dev_sim <- (-2)*sum(LLsim[])
+      dev_data <- (-2)*sum(LL[])
+
+      #test statistics should be ~0.5 if model fits
+      test <- step(dev_data - dev_sim)
+      #_______________________________________________#
+    }
