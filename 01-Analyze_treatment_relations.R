@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #### Script inputs ####
-model.file <- "model_treatment_d0yr.jags"
+model.file <- "CFLRP-analysis-scripts/model_treatment_d0yr.jags"
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
@@ -48,9 +48,9 @@ inits <- function()
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 1000 # burn in
-ni <- 25000 # number of iterations
-nt <- 10 # thinning
+nb <- 1 #1000 # burn in
+ni <- 10 #25000 # number of iterations
+nt <- 1 #10 # thinning
 
 save.out <- "mod_treatment_d0yr"
 ##########################
@@ -68,19 +68,53 @@ n.spp <- dim(Y)[2]
 
 # Covariates #
 Trt.b <- Cov[, "Trt_stat"] # Point-level values
-PctTrt.d <- tapply(Trt.b, gridID, mean, na.rm = T) # Grid-level values
+PctTrt.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+PctTrt.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+  landscape_data %>% filter(YearInd == 1) %>% pull(PctTrt)
+PctTrt.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+  landscape_data %>% filter(YearInd == 2) %>% pull(PctTrt)
+PctTrt.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+  landscape_data %>% filter(YearInd == 3) %>% pull(PctTrt)
+PctTrt.d <- PctTrt.d %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+PctTrt.d[which(is.na(PctTrt.d))] <- 0
 
 YST.b <- Cov[, "Trt_time"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
-YST.d <- tapply(YST.b, gridID, mean, na.rm = T) # Grid-level values
 YST.b[is.na(YST.b)] <- 0
+YST.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+YST.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+  landscape_data %>% filter(YearInd == 1) %>% pull(Trt_time)
+YST.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+  landscape_data %>% filter(YearInd == 2) %>% pull(Trt_time)
+YST.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+  landscape_data %>% filter(YearInd == 3) %>% pull(Trt_time)
+YST.d <- YST.d %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 YST.d[is.na(YST.d)] <- 0
 
-#TWIP.b <- Cov[, "TWIP"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
-TWIP.d <- tapply(Cov[, "TWIP"], gridID, mean, na.rm = T) %>% # Grid-level values
+TWIP.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+TWIP.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+  landscape_data %>% filter(YearInd == 1) %>% pull(TWIP)
+TWIP.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+  landscape_data %>% filter(YearInd == 2) %>% pull(TWIP)
+TWIP.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+  landscape_data %>% filter(YearInd == 3) %>% pull(TWIP)
+TWIP.d <- TWIP.d %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+TWIP.d[which(is.na(TWIP.d))] <- 0
 
 Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+Rdens.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+Rdens.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+  landscape_data %>% filter(YearInd == 1) %>% pull(Rdens)
+Rdens.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+  landscape_data %>% filter(YearInd == 2) %>% pull(Rdens)
+Rdens.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+  landscape_data %>% filter(YearInd == 3) %>% pull(Rdens)
+Rdens.d <- Rdens.d %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+Rdens.d[which(is.na(Rdens.d))] <- 0
 
 DOY.b <- Cov[, "DayOfYear"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 

@@ -77,6 +77,10 @@ model {
   tvar.Betab.CanCov ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betab.CanCov <- abs(tvar.Betab.CanCov) # half-Cauchy distribution
 
+  Betab.CanCov2 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betab.CanCov2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betab.CanCov2 <- abs(tvar.Betab.CanCov2) # half-Cauchy distribution
+
   Betab.CanHt ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betab.CanHt ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betab.CanHt <- abs(tvar.Betab.CanHt) # half-Cauchy distribution
@@ -203,6 +207,7 @@ model {
 
     # covariates for theta (b)
     bb.CanCov[i] ~ dnorm(Betab.CanCov, pow(sigma.Betab.CanCov, -2))
+    bb.CanCov2[i] ~ dnorm(Betab.CanCov2, pow(sigma.Betab.CanCov2, -2))
     bb.CanHt[i] ~ dnorm(Betab.CanHt, pow(sigma.Betab.CanHt, -2))
     bb.NumSnags[i] ~ dnorm(Betab.NumSnags, pow(sigma.Betab.NumSnags, -2))
     bb.RCOV_PP[i] ~ dnorm(Betab.RCOV_PP, pow(sigma.Betab.RCOV_PP, -2))
@@ -235,7 +240,7 @@ model {
     }
 
     for(j in 1:n.point_year) {
-      logit(theta[j, i]) <- b0[i] + bb.CanCov[i]*ccov[j] + bb.CanHt[i]*CanHt[j] +
+      logit(theta[j, i]) <- b0[i] + bb.CanCov[i]*ccov[j] + bb.CanCov2[i]*pow(ccov[j], 2) + bb.CanHt[i]*CanHt[j] +
         bb.NumSnags[i]*NumSnags[j] + bb.RCOV_PP[i]*RCOV_PP[j] + bb.RCOV_DF[i]*RCOV_DF[j] +
         bb.RCOV_AS[i]*RCOV_AS[j] + bb.ShrubVol[i]*shvol[j] + bb.RSCV_Ladder[i]*RSCV_Ladder[j] +
         bb.RSCV_Ber[i]*RSCV_Ber[j] + bb.HerbGrassVol[i]*HerbGrassVol[j] + bb.SOHtRatio[i]*SOHtRatio[j]

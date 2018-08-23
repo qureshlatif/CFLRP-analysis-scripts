@@ -117,8 +117,8 @@ model {
     w[i] ~ dbern(omega)
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
-        logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k] + bd.YST[i]*YST.d[k] +
-          bd.TWIP[i]*TWIP.d[k] + bd.Rdens[i]*Rdens.d[k]
+        logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] + bd.YST[i]*YST.d[k, t] +
+          bd.TWIP[i]*TWIP.d[k, t] + bd.Rdens[i]*Rdens.d[k, t]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }

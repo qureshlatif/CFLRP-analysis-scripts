@@ -33,7 +33,7 @@ parameters <- c("beta0.mean", "beta0.sd", #"N.mean", "p.mean", # Assemble the pa
 # MCMC values.  Adjust as needed.
 nc <- 3
 nb <- 5000
-ni <- 30000
+ni <- 80000
 nt <- 10
 
 save.out <- "mod_RESQ_treatment_global"
@@ -88,10 +88,10 @@ run.time
 rm(st.time,end.time)
 
 max(out$summary[which(!is.na(out$summary[ ,"Rhat"])) ,"Rhat"])
-sort(out$summary[,"Rhat"], decreasing = T)[1:200]
+sort(out$summary[,"Rhat"], decreasing = T)[1:100]
 
 min(out$summary[,"n.eff"])
-#sort(out$summary[,"n.eff"])[1:200]
+sort(out$summary[,"n.eff"])[1:100]
 
 sum(out$sims.list$test) / out$mcmc.info$n.samples
 

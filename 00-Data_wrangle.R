@@ -435,7 +435,6 @@ dat.gis <- dat.gis %>%
   rename(Rdens = Rdens_1km)
 
 veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
-rm(dat.gis)
 
 # Get grid-level landscape structure (LANDFIRE) covariates #
 landscape_data <- data.frame(Grid = pointXyears.list %>% str_sub(1, -9),
@@ -481,7 +480,21 @@ landscape_data <- landscape_data %>%
                      NNdist_Gap3km = NNdist_Gap3km / 1000,
                      NNdist_Opn3km = NNdist_Opn3km / 1000),
             by = c("Grid" = "TransNum", "Year" = "Year"))
+
+dat.gis <- dat.gis %>%
+  mutate(Grid = str_sub(Point_year, 1, -9)) %>%
+  mutate(Year = str_sub(Point_year, -4, -1)) %>%
+  dplyr::group_by(Grid, Year) %>%
+  summarize(PctTrt = mean(Trt_stat) * 100,
+            Trt_time = mean(Trt_time, na.rm = T),
+            TWIP = mean(TWIP),
+            Rdens = mean(Rdens))
+
+landscape_data <- landscape_data %>%
+  left_join(dat.gis, by = c("Grid", "Year"))
+
 rm(PA_data)
+rm(dat.gis)
 
 ## Trim dates, compile day of year & start time in minutes ##
 library(timeDate)
