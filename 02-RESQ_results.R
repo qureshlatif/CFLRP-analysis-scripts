@@ -10,7 +10,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP/")
 load("Data_compiled_RESQ.RData")
 
 #___ Inputs ___#
-mod <- loadObject("mod_RESQ_treatment_global")
+mod <- loadObject("mod_RESQ_treatment_reduced")
 pars <- c("beta0.mean", "beta0.sd", "bl.trt", # Parameters of interest
           "bl.YST", "bd.TWIP", "bd.RDens",
           "a0", "a.Time", "a.Time2", "a.DOY",

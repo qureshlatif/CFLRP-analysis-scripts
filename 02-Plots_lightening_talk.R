@@ -68,32 +68,53 @@ pb <- ggplot(dat = tbl_pars, aes(x = index, y = bb.trt)) +
 
 # Plot species richness #
 gridID <- Cov[, "gridIndex"]
-PctTrt.d <- tapply(Trt.b, gridID, mean, na.rm = T) # Grid-level values
+yearID <- Cov[, "YearInd"]
+PctTrt.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+PctTrt.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+  landscape_data %>% filter(YearInd == 1) %>% pull(PctTrt)
+PctTrt.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+  landscape_data %>% filter(YearInd == 2) %>% pull(PctTrt)
+PctTrt.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+  landscape_data %>% filter(YearInd == 3) %>% pull(PctTrt)
 
 SPR <- mod$sims.list$SR.grid
-SPR.median <- apply(SPR,c(2,3),median)
-SPR.95lo <- apply(SPR,c(2,3),function(x) quantile(x,prob=0.025,type=8))
-SPR.95hi <- apply(SPR,c(2,3),function(x) quantile(x,prob=0.975,type=8))
 
-X <- as.numeric(E[,1,])
-SPR <- as.numeric(SPR.median)
-SPR.lo <- as.numeric(SPR.95lo)
-SPR.hi <- as.numeric(SPR.95hi)
-dat <- data.frame(cbind(X,SPR,SPR.lo,SPR.hi))
+dat.SR <- data.frame(X = (PctTrt.d %>% as.numeric)) %>%
+  mutate(Y = apply(SPR,c(2,3),median) %>% as.numeric,
+         Y.lo = apply(SPR,c(2,3),function(x) quantile(x,prob=0.025,type=8)) %>%
+           as.numeric,
+         Y.hi = apply(SPR,c(2,3),function(x) quantile(x,prob=0.975,type=8)) %>%
+           as.numeric) %>%
+  filter(!is.na(X))
 
-x.labs <- round((c(-2,-1,0,1,2,3)*dNBR.sd)+dNBR.mn,digits=1)
-p <- ggplot(data = dat,aes(x=X,y=SPR)) + 
-  geom_point(alpha=0.3) + stat_smooth(method=lm,level=F,colour="black",size=1.5) + 
-  geom_errorbar(aes(ymin=SPR.lo,ymax=SPR.hi),width=0.1,alpha=0.3) +
-  scale_y_continuous(breaks=c(10,20,30)) +
-  scale_x_continuous(limits=c(-2,3.1),breaks=c(-2,-1,0,1,2,3),labels=x.labs) +
-  labs(x=expression(paste(Delta,"NBR",sep="")),y=NULL) +
+p <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
+  geom_point(alpha = 0.3) + stat_smooth(method = lm, colour = "blue", size = 1.5) + 
+  geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0.1, alpha = 0.3) +
+  labs(x= "Percent treated", y = "Species Richness") +
   theme(axis.title.x=element_text(size=40)) +
-  theme(axis.title.y=element_blank()) +
-  theme(axis.text.x=element_text(size=40)) +
-  theme(axis.text.y=element_text(size=40)) +
-  theme(plot.margin = unit(c(0.1,1,1,0.5),"cm")) +
-  geom_text(aes(x=-2,y=33),label="(b)",size=10)
+  theme(axis.title.y=element_text(size=40)) +
+  theme(axis.text.x=element_text(size=30)) +
+  theme(axis.text.y=element_text(size=30))
 
 
 Trt.b <- Cov[, "Trt_stat"] # Point-level values
+SPR <- mod$sims.list$SR.point
+
+dat.SR <- data.frame(X = (Trt.b %>% as.numeric)) %>%
+  mutate(#X = X + runif(length(Trt.b), -0.4, 0.4),
+         Y = apply(SPR, 2, median) %>% as.numeric,
+         Y.lo = apply(SPR, 2,function(x) quantile(x,prob=0.025,type=8)) %>%
+           as.numeric,
+         Y.hi = apply(SPR, 2, function(x) quantile(x,prob=0.975,type=8)) %>%
+           as.numeric) %>%
+  filter(!is.na(X))
+
+jitter = runif(length(Trt.b), -0.4, 0.4)
+p <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
+  geom_point(aes(x = X + jitter), alpha = 0.3) + stat_smooth(method = lm, colour = "blue", size = 1.5) + 
+  geom_errorbar(aes(x = X + jitter, ymin = Y.lo, ymax = Y.hi), width = 0.1, alpha = 0.3) +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Untreated", "Treated")) +
+  labs(x= NULL, y = "Species Richness") +
+  theme(axis.title.y=element_text(size=40)) +
+  theme(axis.text.x=element_text(size=30)) +
+  theme(axis.text.y=element_text(size=30))
