@@ -1,0 +1,139 @@
+model {
+  
+  ### prior distributions ###
+  
+  # parameter correlation
+  
+  rho.ab ~ dunif(-1,1)
+  rho.bd ~ dunif(-1,1)
+  
+  # mean and precison for the parameter intercepts
+  
+  t.nu <- 7.763179      # Uniform prior
+  t.sigma <- 1.566267   # Uniform prior
+
+  alpha0 ~  dt(0, pow(t.sigma, -2), t.nu)
+  tvar.sigma.a0 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.a0 <- abs(tvar.sigma.a0)  # half-Cauchy distribution
+  
+  beta0 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.sigma.b0 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.b0 <- abs(tvar.sigma.b0)  # half-Cauchy distribution
+  
+  for(t in 1:n.year) {
+    delta0[t] ~ dt(0, pow(t.sigma, -2), t.nu)
+    tvar.sigma.d0[t] ~ dt(0,1,1)  # Cauchy distribution
+    sigma.d0[t] <- abs(tvar.sigma.d0[t])  # half-Cauchy distribution
+  }
+  delta0.mean <- sum(delta0[])/n.year
+  sigma.d0.mean <- sum(sigma.d0[])/n.year
+  
+  # metacommunity parameter
+  omega ~ dunif(0,1)
+  
+  # covariates for psi (d)
+  Betad.PctTrt ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PctTrt ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PctTrt <- abs(tvar.Betad.PctTrt) # half-Cauchy distribution
+
+  Betad.PctTrt2 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PctTrt2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PctTrt2 <- abs(tvar.Betad.PctTrt2) # half-Cauchy distribution
+
+  Betad.TWIP ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.TWIP ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.TWIP <- abs(tvar.Betad.TWIP) # half-Cauchy distribution
+  
+  Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
+
+  # covariates for theta (b)
+  Betab.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betab.Trt ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betab.Trt <- abs(tvar.Betab.Trt) # half-Cauchy distribution
+
+  Betab.YST ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betab.YST ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betab.YST <- abs(tvar.Betab.YST) # half-Cauchy distribution
+
+  Betab.TWIP ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betab.TWIP ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betab.TWIP <- abs(tvar.Betab.TWIP) # half-Cauchy distribution
+  
+  # covariates for p (a)
+  Betaa.Time ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.Time ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Time <- abs(tvar.Betaa.Time) # half-Cauchy distribution
+
+  Betaa.Time2 ~ dt(0, pow(t.sigma, -2), t.nu) # Possibly drop quadratics here.
+  tvar.Betaa.Time2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Time2 <- abs(tvar.Betaa.Time2) # half-Cauchy distribution
+
+  Betaa.DOY ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.DOY ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.DOY <- abs(tvar.Betaa.DOY) # half-Cauchy distribution
+
+  Betaa.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.Trt ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Trt <- abs(tvar.Betaa.Trt) # half-Cauchy distribution
+
+  Betaa.YST ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.YST ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.YST <- abs(tvar.Betaa.YST) # half-Cauchy distribution
+
+  for (i in 1:n.spp) {
+    for(t in 1:n.year) {
+      d0[i, t] ~ dnorm(delta0[t], pow(sigma.d0[t], -2))
+    }
+    d0.mean[i] <- sum(d0[i,])/n.year
+    b0[i] ~ dnorm(beta0 + (rho.bd*sigma.b0/sigma.d0.mean)*(d0.mean[i] -
+      delta0.mean),  pow(sigma.b0,-2)/(1 - pow(rho.bd,2)))
+    a0[i] ~ dnorm(alpha0 + (rho.ab*sigma.a0/sigma.b0)*(b0[i] - beta0),  pow(sigma.a0,-2)/(1 - pow(rho.ab,2)))
+
+    # covariates for psi (d)
+    bd.ptrt[i] ~ dnorm(Betad.PctTrt, pow(sigma.Betad.PctTrt, -2))
+    bd.ptrt2[i] ~ dnorm(Betad.PctTrt2, pow(sigma.Betad.PctTrt2, -2))
+    bd.TWIP[i] ~ dnorm(Betad.TWIP, pow(sigma.Betad.TWIP, -2))
+    bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
+
+    # covariates for theta (b)
+    bb.trt[i] ~ dnorm(Betab.Trt, pow(sigma.Betab.Trt, -2))
+    bb.YST[i] ~ dnorm(Betab.YST, pow(sigma.Betab.YST, -2))
+
+    # covariates for p (a)
+    ba.Time[i] ~ dnorm(Betaa.Time, pow(sigma.Betaa.Time, -2))
+    ba.Time2[i] ~ dnorm(Betaa.Time2, pow(sigma.Betaa.Time2, -2))
+    ba.DOY[i] ~ dnorm(Betaa.DOY, pow(sigma.Betaa.DOY, -2))
+    ba.trt[i] ~ dnorm(Betaa.Trt, pow(sigma.Betaa.Trt, -2))
+    ba.YST[i] ~ dnorm(Betaa.YST, pow(sigma.Betaa.YST, -2))
+
+    # state processes
+    w[i] ~ dbern(omega)
+    for(k in 1:n.grid) {
+      for(t in 1:n.year) {
+        logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] + bd.ptrt2[i]*pow(PctTrt.d[k, t], 2) +
+          bd.TWIP[i]*TWIP.d[k, t] + bd.Rdens[i]*Rdens.d[k, t]
+        z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
+      }
+    }
+
+    for(j in 1:n.point_year) {
+      logit(theta[j, i]) <- b0[i] + bb.trt[i]*Trt.b[j] + bb.YST[i]*YST.b[j]
+        u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
+      
+      logit(p[j, i]) <- a0[i] + ba.Time[i]*Time.b[j] + ba.Time2[i]*pow(Time.b[j], 2) +
+        ba.DOY[i]*DOY.b[j] + #ba.DOY2[i]*pow(DOY.b[j], 2) +
+        ba.trt[i]*Trt.b[j]*Trt.b[j] + ba.YST[i]*YST.b[j]
+      Y[j, i] ~ dbinom(p[j, i]*u[j, i], TPeriod[j, i])
+    }
+  }
+  for(k in 1:n.grid) {
+    for(t in 1:n.year) {
+      SR.grid[k, t] <- sum(z[k, , t])
+    }
+  }
+  for(j in 1:n.point_year) {
+    SR.point[j] <- sum(u[j, ])
+  }
+}

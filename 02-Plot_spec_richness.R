@@ -10,7 +10,10 @@ load("Data_compiled.RData")
 
 mod <- loadObject("mod_treatment_d0yr")
 
-# Plot species richness #
+#### Plot species richness ####
+
+## Grid level ##
+
 gridID <- Cov[, "gridIndex"]
 yearID <- Cov[, "YearInd"]
 PctTrt.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
@@ -22,6 +25,20 @@ PctTrt.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
   landscape_data %>% filter(YearInd == 3) %>% pull(PctTrt)
 
 SPR <- mod$sims.list$SR.grid
+  # Derive posterior samples for plotting spp richness trend #
+X <- seq(0:100)
+Y <- matrix(NA, nrow = dim(SPR)[1], ncol = length(X))
+for(i in 1:dim(SPR)[1]) {
+  y <- as.numeric(SPR[i,,])
+  x <- as.numeric(PctTrt.d)
+  m <- lm(y ~ x + I(x^2))
+  Y[i, ] <- predict(m, data.frame(x = X))
+}
+dat.pred <- data.frame(X = X,
+                       Y = apply(Y, 2, median),
+                       Y.lo = apply(Y, 2, function(x) quantile(x, prob = 0.025, type = 8)),
+                       Y.hi = apply(Y, 2, function(x) quantile(x, prob = 0.975, type = 8)))
+rm(i, y, x, m, X, Y)
 
 dat.SR <- data.frame(X = (PctTrt.d %>% as.numeric)) %>%
   mutate(Y = apply(SPR,c(2,3),median) %>% as.numeric,
@@ -32,17 +49,35 @@ dat.SR <- data.frame(X = (PctTrt.d %>% as.numeric)) %>%
   filter(!is.na(X))
 
 p <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
-  geom_point(alpha = 0.3) + stat_smooth(method = lm, colour = "blue", size = 1.5) + 
+  geom_point(alpha = 0.3) +
   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0.1, alpha = 0.3) +
+  geom_ribbon(data = dat.pred, aes(x = X, ymin = Y.lo, ymax = Y.hi), alpha = 0.2) +
+  geom_line(data = dat.pred, aes(x = X, y = Y), colour = "blue", size = 1.5) + 
   labs(x= "Percent treated", y = "Species Richness") +
   theme(axis.title.x=element_text(size=40)) +
   theme(axis.title.y=element_text(size=40)) +
   theme(axis.text.x=element_text(size=30)) +
   theme(axis.text.y=element_text(size=30))
 
+## Point level ##
 
 Trt.b <- Cov[, "Trt_stat"] # Point-level values
 SPR <- mod$sims.list$SR.point
+
+# Derive posterior samples for plotting spp richness trend #
+X <- c(0, 1)
+Y <- matrix(NA, nrow = dim(SPR)[1], ncol = length(X))
+for(i in 1:dim(SPR)[1]) {
+  y <- as.numeric(SPR[i,])
+  x <- as.numeric(Trt.b)
+  m <- lm(y ~ x)
+  Y[i, ] <- predict(m, data.frame(x = X))
+}
+dat.pred <- data.frame(X = X,
+                       Y = apply(Y, 2, median),
+                       Y.lo = apply(Y, 2, function(x) quantile(x, prob = 0.025, type = 8)),
+                       Y.hi = apply(Y, 2, function(x) quantile(x, prob = 0.975, type = 8)))
+rm(i, y, x, m, X, Y)
 
 dat.SR <- data.frame(X = (Trt.b %>% as.numeric)) %>%
   mutate(#X = X + runif(length(Trt.b), -0.4, 0.4),
@@ -55,8 +90,10 @@ dat.SR <- data.frame(X = (Trt.b %>% as.numeric)) %>%
 
 jitter = runif(length(Trt.b), -0.4, 0.4)
 p <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
-  geom_point(aes(x = X + jitter), alpha = 0.3) + stat_smooth(method = lm, colour = "blue", size = 1.5) + 
-  geom_errorbar(aes(x = X + jitter, ymin = Y.lo, ymax = Y.hi), width = 0.1, alpha = 0.3) +
+  geom_point(aes(x = X + jitter), alpha = 0.3) + 
+  geom_errorbar(aes(x = X + jitter, ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
+  geom_errorbar(data = dat.pred, aes(x = X, ymin = Y.lo, ymax = Y.hi), width = 0.3, size = 1, color = "blue") +
+  geom_point(data = dat.pred, aes(x = X, y = Y), size = 3, color = "blue") + 
   scale_x_continuous(breaks = c(0, 1), labels = c("Untreated", "Treated")) +
   labs(x= NULL, y = "Species Richness") +
   theme(axis.title.y=element_text(size=40)) +

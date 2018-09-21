@@ -18,6 +18,8 @@ pars <- c("beta0.mean", "beta0.sd", "bl.trt", # Parameters of interest
 tab.out <- "Param_summ_RESQ.csv"
 #______________#
 
+samp.acres <- sum(area.band) * 0.000247105
+
 # Parameter summary table #
 sum.table <- mod$summary %>% tbl_df %>%
   mutate(parameter = dimnames(mod$summary)[[1]]) %>%
@@ -28,31 +30,72 @@ sum.table <- mod$summary %>% tbl_df %>%
 
 write.csv(sum.table, tab.out, row.names = F)
 
-# Plot outbreak relationships #
-Cov <- eval(as.name(str_c("Cov.", stratum)))
-x.pctdead <- seq(0, 1, length.out = 20)
-#z.pctdead <- (x.pctdead - mean(Cov[, "DeadConif"], na.rm = T)) / sd(Cov[, "DeadConif"], na.rm = T)
-x.YSO <- seq(0, max(Cov[, "YSO"], na.rm = T))
-#z.YSO <- (x.YSO - mean(Cov[, "YSO"], na.rm = T)) / sd(Cov[, "YSO"], na.rm = T)
-plt.tbl <- expand.grid(x.pctdead, x.YSO) %>%
-  rename(pctdead = Var1, YSO = Var2) %>%
-  mutate(pctdead.z = (pctdead - mean(Cov[, "DeadConif"], na.rm = T)) / sd(Cov[, "DeadConif"], na.rm = T)) %>%
-  mutate(YSO.z = (YSO - mean(Cov[, "YSO"], na.rm = T)) / sd(Cov[, "YSO"], na.rm = T)) %>%
-  mutate(Outbreak = 1)
-plt.tbl <- plt.tbl %>% rbind(c(mean(Cov[-ind, "DeadConif"], na.rm = T),
-                               -2,
-                               ((mean(Cov[-ind, "DeadConif"], na.rm = T) - mean(Cov[, "DeadConif"], na.rm = T)) / sd(Cov[, "DeadConif"], na.rm = T)),
-                               0, 0))
+#### Plot abundance relationships ####
+## Treatment ##
+dat.obs <- Cov %>%
+  as.data.frame() %>%
+  mutate(N.md = apply(mod$sims.list$N, 2, median),
+         N.lo = apply(mod$sims.list$N, 2, function(x) quantile(x, prob = 0.025, type = 8)),
+         N.hi = apply(mod$sims.list$N, 2, function(x) quantile(x, prob = 0.975, type = 8)),
+         Y = Y.dist)
 
-pred.N <- matrix(NA, nrow = nrow(plt.tbl), ncol = mod$mcmc.info$n.samples)
-for(j in 1:nrow(pred.N))
-  pred.N[j, ] <- exp(mod$sims.list$beta0.mean +
-                       mod$sims.list$bl.pdead * plt.tbl$pctdead.z[j] +
-                       mod$sims.list$bl.pdead2 * (plt.tbl$pctdead.z[j]^2) +
-                       mod$sims.list$bl.outbrk * plt.tbl$Outbreak[j] +
-                       mod$sims.list$bl.YSO * plt.tbl$YSO.z[j] +
-                       mod$sims.list$bl.YSO2 * (plt.tbl$YSO[j]^2) +
-                       mod$sims.list$bl.pdXYSO * plt.tbl$pctdead.z[j] * plt.tbl$YSO.z[j])
-plt.tbl$N.md <- apply(pred.N, 1, median)
-plt.tbl$N.95lo <- apply(pred.N, 1, function(x) quantile(x, prob = 0.025, type = 8))
-plt.tbl$N.95hi <- apply(pred.N, 1, function(x) quantile(x, prob = 0.975, type = 8))
+dat.pred <- data.frame(x.trt = c(0, rep(1, 10)), x.YST = c(NA, 1:10)) %>%
+  mutate(z.YST = (x.YST - mean(dat.obs$Trt_time, na.rm = T)) / sd(dat.obs$Trt_time, na.rm = T)) %>%
+  mutate(x.YST = replace(x.YST, which(x.trt == 0), 0)) %>%
+  mutate(z.YST = replace(z.YST, which(x.trt == 0), 0)) %>%
+  mutate(pred = NA, pred.lo = NA, pred.hi = NA)
+
+B.trt <- mod$sims.list$bl.trt
+B.YST <- mod$sims.list$bl.YST
+for(i in 1:nrow(dat.pred)) {
+  beta0 <- mod$sims.list$beta0.mean
+  lambda <- (exp(beta0 + B.trt*dat.pred$x.trt[i] + B.YST*dat.pred$z.YST[i]) / samp.acres) * 100 # Rescale to number per 100 acres
+  dat.pred$pred[i] <- median(lambda)
+  dat.pred$pred.lo[i] <- quantile(lambda, prob = 0.025, type = 8)
+  dat.pred$pred.hi[i] <- quantile(lambda, prob = 0.975, type = 8)
+}
+
+dat.obs <- dat.obs %>%
+  mutate(x = replace(Trt_time, which(is.na(Trt_time)), 0)) %>%
+  dplyr::group_by(x) %>%
+  summarise(N = (mean(N.md) / samp.acres) * 100)
+p.trt <- ggplot(dat.pred, aes(x = x.YST, y = pred)) +
+  #geom_point(data = dat.obs, aes(x = x, y = N), size = 1) +
+  geom_errorbar(data = dat.pred %>% filter(x.trt == 0), aes(x = x.YST, ymin = pred.lo, ymax = pred.hi), size = 1, width = 0.2) +
+  geom_point(data = dat.pred %>% filter(x.trt == 0), aes(x = x.YST, y = pred), size = 3) +
+  geom_ribbon(data = dat.pred %>% filter(x.trt == 1), aes(x = x.YST, ymin = pred.lo, ymax = pred.hi), alpha = 0.3) +
+  geom_line(data = dat.pred %>% filter(x.trt == 1), aes(x = x.YST, y = pred), size = 2) +
+  scale_x_continuous(lim = c(-0.3, 10.3), breaks = 0:10, labels = c("pre", 1:10)) +
+  ylim(0, 23) +
+  xlab("Years since treatment") + ylab(NULL)
+
+## TWIP ##
+dat.pred <- data.frame(x = seq(min(Cov[, "TWIP"]), max(Cov[, "TWIP"]), length.out = 10)) %>%
+  mutate(z = (x - mean(Cov[, "TWIP"], na.rm = T)) / sd(Cov[, "TWIP"], na.rm = T)) %>%
+  mutate(pred = NA, pred.lo = NA, pred.hi = NA)
+
+B <- mod$sims.list$bd.TWIP
+for(i in 1:nrow(dat.pred)) {
+  beta0 <- mod$sims.list$beta0.mean + B*dat.pred$z[i]
+  lambda <- (exp(beta0) / samp.acres) * 100 # Rescale to number per 100 acres
+  dat.pred$pred[i] <- median(lambda)
+  dat.pred$pred.lo[i] <- quantile(lambda, prob = 0.025, type = 8)
+  dat.pred$pred.hi[i] <- quantile(lambda, prob = 0.975, type = 8)
+}
+
+p.TWIP <- ggplot(dat.pred, aes(x = x, y = pred)) +
+  geom_ribbon(data = dat.pred, aes(x = x, ymin = pred.lo, ymax = pred.hi), alpha = 0.3) +
+  geom_line(data = dat.pred, aes(x = x, y = pred), size = 2) +
+  ylim(0, 23) +
+  xlab("TWIP") + ylab(NULL)
+
+p <- ggdraw() +
+  draw_plot(p.trt, x = 0.05, y = 0, width = 0.475, height = 1) +
+  draw_plot(p.TWIP, x = 0.525, y = 0, width = 0.475, height = 1) +
+  draw_plot_label("RESQ density per 100 acres", x = 0.02, y = 0.15, angle = 90, hjust = 0)
+
+save_plot("figure_RESQ_abundance.tiff", p, ncol = 2, nrow = 1, dpi = 200)
+
+
+#### Plot detection relationships??? ####
+## Treatment ##

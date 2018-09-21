@@ -121,6 +121,10 @@ model {
   tvar.Betab.SOHtRatio ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betab.SOHtRatio <- abs(tvar.Betab.SOHtRatio) # half-Cauchy distribution
 
+  Betab.RESQ ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betab.RESQ ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betab.RESQ <- abs(tvar.Betab.RESQ) # half-Cauchy distribution
+
   # covariates for p (a)
   Betaa.Time ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betaa.Time ~ dt(0,1,1)  # Cauchy distribution
@@ -148,15 +152,17 @@ model {
 
   # Impute missing data
   for(k in 1:n.grid) {
-    mnPerArRatio_Gap3km.d.imp[k] ~ dnorm(mnPerArRatio_Gap3km.d.mean, pow(mnPerArRatio_Gap3km.d.sd, -2))
-    mnPerArRatio_Gap3km[k] <- mnPerArRatio_Gap3km.d[k]*(1-mnPerArRatio_Gap3km.d.missing[k]) +
-      mnPerArRatio_Gap3km.d.imp[k]*mnPerArRatio_Gap3km.d.missing[k]
-    NNdist_Gap3km.d.imp[k] ~ dunif(NNdist_Gap3km.d.min, NNdist_Gap3km.d.max)
-    NNdist_Gap3km[k] <- NNdist_Gap3km.d[k]*(1-NNdist_Gap3km.d.missing[k]) +
-      NNdist_Gap3km.d.imp[k]*NNdist_Gap3km.d.missing[k]
-    NNdist_Opn3km.d.imp[k] ~ dunif(NNdist_Opn3km.d.min, NNdist_Opn3km.d.max)
-    NNdist_Opn3km[k] <- NNdist_Opn3km.d[k]*(1-NNdist_Opn3km.d.missing[k]) +
-      NNdist_Opn3km.d.imp[k]*NNdist_Opn3km.d.missing[k]
+    for(t in 1:n.year) {
+      mnPerArRatio_Gap3km.d.imp[k, t] ~ dnorm(mnPerArRatio_Gap3km.d.mean, pow(mnPerArRatio_Gap3km.d.sd, -2))
+      mnPerArRatio_Gap3km[k, t] <- mnPerArRatio_Gap3km.d[k, t]*(1-mnPerArRatio_Gap3km.d.missing[k, t]) +
+        mnPerArRatio_Gap3km.d.imp[k, t]*mnPerArRatio_Gap3km.d.missing[k, t]
+      NNdist_Gap3km.d.imp[k, t] ~ dunif(NNdist_Gap3km.d.min, NNdist_Gap3km.d.max)
+      NNdist_Gap3km[k, t] <- NNdist_Gap3km.d[k, t]*(1-NNdist_Gap3km.d.missing[k, t]) +
+        NNdist_Gap3km.d.imp[k, t]*NNdist_Gap3km.d.missing[k, t]
+      NNdist_Opn3km.d.imp[k, t] ~ dunif(NNdist_Opn3km.d.min, NNdist_Opn3km.d.max)
+      NNdist_Opn3km[k, t] <- NNdist_Opn3km.d[k, t]*(1-NNdist_Opn3km.d.missing[k, t]) +
+        NNdist_Opn3km.d.imp[k, t]*NNdist_Opn3km.d.missing[k, t]
+    }
   }
   
   for(j in 1:n.point_year) {
@@ -183,6 +189,9 @@ model {
     SOHtRatio.b.imp[j] ~ dnorm(SOHtRatio.means[gridID[j]], pow(SOHtRatio.sd[gridID[j]], -2))
     SOHtRatio[j] <- SOHtRatio.b[j]*(1-SOHtRatio.b.missing[j]) + SOHtRatio.b.imp[j]*SOHtRatio.b.missing[j]
   }
+
+  # Draw index for RESQ abundance posterior sample #
+  ind.RESQ ~ dcat(RESQ.wts)
   
   for (i in 1:n.spp) {
     for(t in 1:n.year) {
@@ -218,6 +227,7 @@ model {
     bb.RSCV_Ber[i] ~ dnorm(Betab.RSCV_Ber, pow(sigma.Betab.RSCV_Ber, -2))
     bb.HerbGrassVol[i] ~ dnorm(Betab.HerbGrassVol, pow(sigma.Betab.HerbGrassVol, -2))
     bb.SOHtRatio[i] ~ dnorm(Betab.SOHtRatio, pow(sigma.Betab.SOHtRatio, -2))
+    bb.RESQ[i] ~ dnorm(Betab.RESQ, pow(sigma.Betab.RESQ, -2))
 
     # covariates for p (a)
     ba.Time[i] ~ dnorm(Betaa.Time, pow(sigma.Betaa.Time, -2))
@@ -230,11 +240,11 @@ model {
     w[i] ~ dbern(omega)
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
-        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k] +
-          bd.mnPtchAr_Gap3km[i]*mnPtchAr_Gap3km.d[k] + bd.mnPerArRatio_Gap3km[i]*mnPerArRatio_Gap3km[k] +
-          bd.NNdist_Gap3km[i]*NNdist_Gap3km[k] + bd.PACC40_3km[i]*PACC40_3km.d[k] +
-          bd.mnPtchAr_Opn3km[i]*mnPtchAr_Opn3km.d[k] + bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k] +
-          bd.NNdist_Opn3km[i]*NNdist_Opn3km[k] + bd.TWIP[i]*TWIP.d[k] + bd.Rdens[i]*Rdens.d[k]
+        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] +
+          bd.mnPtchAr_Gap3km[i]*mnPtchAr_Gap3km.d[k, t] + bd.mnPerArRatio_Gap3km[i]*mnPerArRatio_Gap3km[k, t] +
+          bd.NNdist_Gap3km[i]*NNdist_Gap3km[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] +
+          bd.mnPtchAr_Opn3km[i]*mnPtchAr_Opn3km.d[k, t] + bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] +
+          bd.NNdist_Opn3km[i]*NNdist_Opn3km[k, t] + bd.TWIP[i]*TWIP.d[k] + bd.Rdens[i]*Rdens.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }
@@ -243,7 +253,8 @@ model {
       logit(theta[j, i]) <- b0[i] + bb.CanCov[i]*ccov[j] + bb.CanCov2[i]*pow(ccov[j], 2) + bb.CanHt[i]*CanHt[j] +
         bb.NumSnags[i]*NumSnags[j] + bb.RCOV_PP[i]*RCOV_PP[j] + bb.RCOV_DF[i]*RCOV_DF[j] +
         bb.RCOV_AS[i]*RCOV_AS[j] + bb.ShrubVol[i]*shvol[j] + bb.RSCV_Ladder[i]*RSCV_Ladder[j] +
-        bb.RSCV_Ber[i]*RSCV_Ber[j] + bb.HerbGrassVol[i]*HerbGrassVol[j] + bb.SOHtRatio[i]*SOHtRatio[j]
+        bb.RSCV_Ber[i]*RSCV_Ber[j] + bb.HerbGrassVol[i]*HerbGrassVol[j] + bb.SOHtRatio[i]*SOHtRatio[j] +
+        bb.RESQ[i]*RESQ.b[ind.RESQ, j]
       u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
       
       logit(p[j, i]) <- a0[i] + ba.Time[i]*Time.b[j] + ba.Time2[i]*pow(Time.b[j], 2) +
