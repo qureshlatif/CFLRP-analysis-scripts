@@ -36,6 +36,10 @@ model {
   tvar.Betad.PACC10_3km ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.PACC10_3km <- abs(tvar.Betad.PACC10_3km) # half-Cauchy distribution
   
+  Betad.PACC10_3km2 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PACC10_3km2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PACC10_3km2 <- abs(tvar.Betad.PACC10_3km2) # half-Cauchy distribution
+  
   Betad.mnPtchAr_Gap3km ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betad.mnPtchAr_Gap3km ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.mnPtchAr_Gap3km <- abs(tvar.Betad.mnPtchAr_Gap3km) # half-Cauchy distribution
@@ -51,6 +55,10 @@ model {
   Betad.PACC40_3km ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betad.PACC40_3km ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.PACC40_3km <- abs(tvar.Betad.PACC40_3km) # half-Cauchy distribution
+  
+  Betad.PACC40_3km2 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PACC40_3km2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PACC40_3km2 <- abs(tvar.Betad.PACC40_3km2) # half-Cauchy distribution
   
   Betad.mnPtchAr_Opn3km ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betad.mnPtchAr_Opn3km ~ dt(0,1,1)  # Cauchy distribution
@@ -204,10 +212,12 @@ model {
 
     # covariates for psi (d)
     bd.PACC10_3km[i] ~ dnorm(Betad.PACC10_3km, pow(sigma.Betad.PACC10_3km, -2))
+    bd.PACC10_3km2[i] ~ dnorm(Betad.PACC10_3km2, pow(sigma.Betad.PACC10_3km2, -2))
     bd.mnPtchAr_Gap3km[i] ~ dnorm(Betad.mnPtchAr_Gap3km, pow(sigma.Betad.mnPtchAr_Gap3km, -2))
     bd.mnPerArRatio_Gap3km[i] ~ dnorm(Betad.mnPerArRatio_Gap3km, pow(sigma.Betad.mnPerArRatio_Gap3km, -2))
     bd.NNdist_Gap3km[i] ~ dnorm(Betad.NNdist_Gap3km, pow(sigma.Betad.NNdist_Gap3km, -2))
     bd.PACC40_3km[i] ~ dnorm(Betad.PACC40_3km, pow(sigma.Betad.PACC40_3km, -2))
+    bd.PACC40_3km2[i] ~ dnorm(Betad.PACC40_3km2, pow(sigma.Betad.PACC40_3km2, -2))
     bd.mnPtchAr_Opn3km[i] ~ dnorm(Betad.mnPtchAr_Opn3km, pow(sigma.Betad.mnPtchAr_Opn3km, -2))
     bd.mnPerArRatio_Opn3km[i] ~ dnorm(Betad.mnPerArRatio_Opn3km, pow(sigma.Betad.mnPerArRatio_Opn3km, -2))
     bd.NNdist_Opn3km[i] ~ dnorm(Betad.NNdist_Opn3km, pow(sigma.Betad.NNdist_Opn3km, -2))
@@ -240,9 +250,9 @@ model {
     w[i] ~ dbern(omega)
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
-        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] +
+        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] + bd.PACC10_3km2[i]*pow(PACC10_3km.d[k, t], 2) +
           bd.mnPtchAr_Gap3km[i]*mnPtchAr_Gap3km.d[k, t] + bd.mnPerArRatio_Gap3km[i]*mnPerArRatio_Gap3km[k, t] +
-          bd.NNdist_Gap3km[i]*NNdist_Gap3km[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] +
+          bd.NNdist_Gap3km[i]*NNdist_Gap3km[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] + bd.PACC40_3km2[i]*pow(PACC40_3km.d[k, t], 2) +
           bd.mnPtchAr_Opn3km[i]*mnPtchAr_Opn3km.d[k, t] + bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] +
           bd.NNdist_Opn3km[i]*NNdist_Opn3km[k, t] + bd.TWIP[i]*TWIP.d[k] + bd.Rdens[i]*Rdens.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
