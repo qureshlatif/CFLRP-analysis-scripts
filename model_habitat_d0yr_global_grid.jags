@@ -1,0 +1,183 @@
+model {
+  
+  ### prior distributions ###
+  
+  # parameter correlation
+  
+  rho.ab ~ dunif(-1,1)
+  rho.bd ~ dunif(-1,1)
+  
+  # mean and precison for the parameter intercepts
+  
+  t.nu <- 7.763179      # Uniform prior
+  t.sigma <- 1.566267   # Uniform prior
+
+  alpha0 ~  dt(0, pow(t.sigma, -2), t.nu)
+  tvar.sigma.a0 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.a0 <- abs(tvar.sigma.a0)  # half-Cauchy distribution
+  
+  beta0 ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.sigma.b0 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.b0 <- abs(tvar.sigma.b0)  # half-Cauchy distribution
+  
+  for(t in 1:n.year) {
+    delta0[t] ~ dt(0, pow(t.sigma, -2), t.nu)
+    tvar.sigma.d0[t] ~ dt(0,1,1)  # Cauchy distribution
+    sigma.d0[t] <- abs(tvar.sigma.d0[t])  # half-Cauchy distribution
+  }
+  delta0.mean <- sum(delta0[])/n.year
+  sigma.d0.mean <- sum(sigma.d0[])/n.year
+  
+  # metacommunity parameter
+  omega ~ dunif(0,1)
+  
+  # covariates for psi (d)
+  Betad.PACC10_3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PACC10_3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PACC10_3km <- abs(tvar.Betad.PACC10_3km) # half-Cauchy distribution
+
+  Betad.mnPtchAr_Gap3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.mnPtchAr_Gap3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.mnPtchAr_Gap3km <- abs(tvar.Betad.mnPtchAr_Gap3km) # half-Cauchy distribution
+  
+  Betad.mnPerArRatio_Gap3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.mnPerArRatio_Gap3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.mnPerArRatio_Gap3km <- abs(tvar.Betad.mnPerArRatio_Gap3km) # half-Cauchy distribution
+  
+  Betad.NNdist_Gap3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.NNdist_Gap3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.NNdist_Gap3km <- abs(tvar.Betad.NNdist_Gap3km) # half-Cauchy distribution
+  
+  Betad.PACC40_3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.PACC40_3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.PACC40_3km <- abs(tvar.Betad.PACC40_3km) # half-Cauchy distribution
+
+  Betad.mnPtchAr_Opn3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.mnPtchAr_Opn3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.mnPtchAr_Opn3km <- abs(tvar.Betad.mnPtchAr_Opn3km) # half-Cauchy distribution
+  
+  Betad.mnPerArRatio_Opn3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.mnPerArRatio_Opn3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.mnPerArRatio_Opn3km <- abs(tvar.Betad.mnPerArRatio_Opn3km) # half-Cauchy distribution
+  
+  Betad.NNdist_Opn3km ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.NNdist_Opn3km ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.NNdist_Opn3km <- abs(tvar.Betad.NNdist_Opn3km) # half-Cauchy distribution
+
+  Betad.TWIP ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.TWIP ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.TWIP <- abs(tvar.Betad.TWIP) # half-Cauchy distribution
+  
+  Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
+
+  # covariates for p (a)
+  Betaa.Time ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.Time ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Time <- abs(tvar.Betaa.Time) # half-Cauchy distribution
+
+  Betaa.Time2 ~ dt(0, pow(t.sigma, -2), t.nu) # Possibly drop quadratics here.
+  tvar.Betaa.Time2 ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.Time2 <- abs(tvar.Betaa.Time2) # half-Cauchy distribution
+
+  Betaa.DOY ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.DOY ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.DOY <- abs(tvar.Betaa.DOY) # half-Cauchy distribution
+
+  # Betaa.DOY2 ~ dt(0, pow(t.sigma,-2), t.nu)
+  # tvar.Betaa.DOY2 ~ dt(0,1,1)  # Cauchy distribution
+  # sigma.Betaa.DOY2 <- abs(tvar.Betaa.DOY2) # half-Cauchy distribution
+
+  Betaa.CCov ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.CCov ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.CCov <- abs(tvar.Betaa.CCov) # half-Cauchy distribution
+
+  Betaa.SHVol ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betaa.SHVol ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betaa.SHVol <- abs(tvar.Betaa.SHVol) # half-Cauchy distribution
+
+  # Impute missing data
+  for(k in 1:n.grid) {
+    for(t in 1:n.year) {
+      mnPerArRatio_Gap3km.d.imp[k, t] ~ dnorm(mnPerArRatio_Gap3km.d.mean, pow(mnPerArRatio_Gap3km.d.sd, -2))
+      mnPerArRatio_Gap3km[k, t] <- mnPerArRatio_Gap3km.d[k, t]*(1-mnPerArRatio_Gap3km.d.missing[k, t]) +
+        mnPerArRatio_Gap3km.d.imp[k, t]*mnPerArRatio_Gap3km.d.missing[k, t]
+      NNdist_Gap3km.d.imp[k, t] ~ dunif(NNdist_Gap3km.d.min, NNdist_Gap3km.d.max)
+      NNdist_Gap3km[k, t] <- NNdist_Gap3km.d[k, t]*(1-NNdist_Gap3km.d.missing[k, t]) +
+        NNdist_Gap3km.d.imp[k, t]*NNdist_Gap3km.d.missing[k, t]
+      NNdist_Opn3km.d.imp[k, t] ~ dunif(NNdist_Opn3km.d.min, NNdist_Opn3km.d.max)
+      NNdist_Opn3km[k, t] <- NNdist_Opn3km.d[k, t]*(1-NNdist_Opn3km.d.missing[k, t]) +
+        NNdist_Opn3km.d.imp[k, t]*NNdist_Opn3km.d.missing[k, t]
+    }
+  }
+
+  for(j in 1:n.point_year) {
+    ccov.b.imp[j] ~ dnorm(ccov.means[gridID[j]], pow(ccov.sd[gridID[j]], -2))
+    ccov[j] <- ccov.b[j]*(1-ccov.b.missing[j]) + ccov.b.imp[j]*ccov.b.missing[j]
+    shvol.b.imp[j] ~ dnorm(shvol.means[gridID[j]], pow(shvol.sd[gridID[j]], -2))
+    shvol[j] <- shvol.b[j]*(1-shvol.b.missing[j]) + shvol.b.imp[j]*shvol.b.missing[j]
+  }
+  
+  # Draw index for RESQ abundance posterior sample #
+  ind.RESQ ~ dcat(RESQ.wts)
+  
+  for (i in 1:n.spp) {
+    for(t in 1:n.year) {
+      d0[i, t] ~ dnorm(delta0[t], pow(sigma.d0[t], -2))
+    }
+    d0.mean[i] <- sum(d0[i,])/n.year
+    b0[i] ~ dnorm(beta0 + (rho.bd*sigma.b0/sigma.d0.mean)*(d0.mean[i] -
+      delta0.mean),  pow(sigma.b0,-2)/(1 - pow(rho.bd,2)))
+    a0[i] ~ dnorm(alpha0 + (rho.ab*sigma.a0/sigma.b0)*(b0[i] - beta0),  pow(sigma.a0,-2)/(1 - pow(rho.ab,2)))
+
+    # covariates for psi (d)
+    bd.PACC10_3km[i] ~ dnorm(Betad.PACC10_3km, pow(sigma.Betad.PACC10_3km, -2))
+    bd.mnPtchAr_Gap3km[i] ~ dnorm(Betad.mnPtchAr_Gap3km, pow(sigma.Betad.mnPtchAr_Gap3km, -2))
+    bd.mnPerArRatio_Gap3km[i] ~ dnorm(Betad.mnPerArRatio_Gap3km, pow(sigma.Betad.mnPerArRatio_Gap3km, -2))
+    bd.NNdist_Gap3km[i] ~ dnorm(Betad.NNdist_Gap3km, pow(sigma.Betad.NNdist_Gap3km, -2))
+    bd.PACC40_3km[i] ~ dnorm(Betad.PACC40_3km, pow(sigma.Betad.PACC40_3km, -2))
+    bd.mnPtchAr_Opn3km[i] ~ dnorm(Betad.mnPtchAr_Opn3km, pow(sigma.Betad.mnPtchAr_Opn3km, -2))
+    bd.mnPerArRatio_Opn3km[i] ~ dnorm(Betad.mnPerArRatio_Opn3km, pow(sigma.Betad.mnPerArRatio_Opn3km, -2))
+    bd.NNdist_Opn3km[i] ~ dnorm(Betad.NNdist_Opn3km, pow(sigma.Betad.NNdist_Opn3km, -2))
+    bd.TWIP[i] ~ dnorm(Betad.TWIP, pow(sigma.Betad.TWIP, -2))
+    bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
+
+    # covariates for p (a)
+    ba.Time[i] ~ dnorm(Betaa.Time, pow(sigma.Betaa.Time, -2))
+    ba.Time2[i] ~ dnorm(Betaa.Time2, pow(sigma.Betaa.Time2, -2))
+    ba.DOY[i] ~ dnorm(Betaa.DOY, pow(sigma.Betaa.DOY, -2))
+    ba.ccov[i] ~ dnorm(Betaa.CCov, pow(sigma.Betaa.CCov, -2))
+    ba.shvol[i] ~ dnorm(Betaa.SHVol, pow(sigma.Betaa.SHVol, -2))
+
+    # state processes
+    w[i] ~ dbern(omega)
+    for(k in 1:n.grid) {
+      for(t in 1:n.year) {
+        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] +
+          bd.mnPtchAr_Gap3km[i]*mnPtchAr_Gap3km.d[k, t] + bd.mnPerArRatio_Gap3km[i]*mnPerArRatio_Gap3km[k, t] +
+          bd.NNdist_Gap3km[i]*NNdist_Gap3km[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] +
+          bd.mnPtchAr_Opn3km[i]*mnPtchAr_Opn3km.d[k, t] + bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] +
+          bd.NNdist_Opn3km[i]*NNdist_Opn3km[k, t] + bd.TWIP[i]*TWIP.d[k] + bd.Rdens[i]*Rdens.d[k]
+        z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
+      }
+    }
+
+    for(j in 1:n.point_year) {
+      logit(theta[j, i]) <- b0[i]
+      u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
+      
+      logit(p[j, i]) <- a0[i] + ba.Time[i]*Time.b[j] + ba.Time2[i]*pow(Time.b[j], 2) +
+        ba.DOY[i]*DOY.b[j] + ba.ccov[i]*ccov[j] + ba.shvol[i]*shvol[j]
+      Y[j, i] ~ dbinom(p[j, i]*u[j, i], TPeriod[j, i])
+    }
+  }
+  for(k in 1:n.grid) {
+    for(t in 1:n.year) {
+      SR.grid[k, t] <- sum(z[k, , t])
+    }
+  }
+  for(j in 1:n.point_year) {
+    SR.point[j] <- sum(u[j, ])
+  }
+}

@@ -10,6 +10,15 @@ load("Data_compiled.RData")
 model.file <- "CFLRP-analysis-scripts/model_habitat_d0yr.jags"
 RESQ.model <- "mod_RESQ_treatment_reduced"
 
+# MCMC values
+nc <- 3 # number of chains
+nb <- 5 #5000 # burn in
+ni <- 10 #30000 # number of iterations
+nt <- 1 #10 # thinning
+
+save.out <- "mod_habitat_d0yr"
+##########################
+
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
              "ccov.b", "ccov.means", "ccov.sd", "ccov.b.missing",
@@ -31,7 +40,7 @@ data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_ye
              "mnPerArRatio_Opn3km.d",
              "NNdist_Opn3km.d", "NNdist_Opn3km.d.missing", "NNdist_Opn3km.d.min", "NNdist_Opn3km.d.max",
              "TWIP.d","Rdens.d",
-             "RESQ.b", "RESQ.wts",
+             "RESQ.b", "RESQ.wts", "RESQ.bm",
              "DOY.b", "Time.b")
 
 # Stuff to save from JAGS
@@ -99,15 +108,6 @@ inits <- function()
        tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
        tvar.Betaa.DOY = rnorm(1),
        tvar.Betaa.CCov = rnorm(1), tvar.Betaa.SHVol = rnorm(1))
-
-# MCMC values
-nc <- 3 # number of chains
-nb <- 5 #5000 # burn in
-ni <- 10 #30000 # number of iterations
-nt <- 1 #10 # thinning
-
-save.out <- "mod_habitat_d0yr"
-##########################
 
 # Detection data #
 Y <- Y.mat
@@ -257,6 +257,7 @@ PACC40_3km.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
   landscape_data %>% filter(YearInd == 3) %>% pull(PACC40_3km)
 PACC40_3km.d <- PACC40_3km.d %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+PACC40_3km.d[which(is.na(PACC40_3km.d))] <- 0
 
 mnPtchAr_Opn3km.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
 mnPtchAr_Opn3km.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
@@ -312,6 +313,7 @@ rm(mod) #N, cl.size.samps
 RESQ.b <- RESQ.b %>%
   (function(x) (x - mean(x)) / sd(x))
 RESQ.wts <- rep(1, dim(RESQ.b)[1])
+RESQ.bm <- apply(RESQ.b, 2, median)
 
 DOY.b <- Cov[, "DayOfYear"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 

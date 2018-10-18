@@ -7,21 +7,17 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #__________ Script inputs _____________#
-mod <- loadObject("mod_treat2_d0yr")
-params <- c("d0.1", "d0.2", "d0.3",
-            "bd.ptrt",
-            "bd.ptrt2",
-            "bd.YST",
-            "bd.TWIP",
-            "bd.Rdens",
-            "bb.trt",
-            "bb.YST",
-            "ba.Time",
-            "ba.Time2",
-            "ba.DOY",
-            "ba.trt",
-            "ba.YST")
+mod <- loadObject("mod_habitat_d0yr_global_grid")
+params <- c("d0.1", "d0.2", "d0.3", "bd.ptrt", "bd.ptrt2", "bd.YST",
+            "bd.PACC10_3km", "bd.mnPtchAr_Gap3km", "bd.mnPerArRatio_Gap3km",
+            "bd.NNdist_Gap3km", "bd.PACC40_3km", "bd.mnPtchAr_Opn3km",
+            "bd.mnPerArRatio_Opn3km", "bd.NNdist_Opn3km",
+            "bd.TWIP", "bd.Rdens",
+            "bb.trt", "bb.YST", "ba.Time", "ba.Time2",
+            "ba.DOY", "ba.trt", "ba.YST",
+            "ba.ccov", "ba.shvol")
 out.vals <- c("est", "f")
+params <- c("d0.1", "d0.2", "d0.3", params[which(params %in% names(mod$sims.list))])
 #______________________________________#
 
 cols <- (expand.grid(out.vals, params, stringsAsFactors = F) %>%
