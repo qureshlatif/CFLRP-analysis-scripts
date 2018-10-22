@@ -28,7 +28,7 @@ SampDesign <- c("IMBCR", "GRTS")
 
 #### Compile species list ####
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('BirdCode|str',
                           'Species|str')
 )
@@ -83,7 +83,7 @@ spp.excluded <- grab %>%
 
 #### Detection data ####
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -179,7 +179,7 @@ bird_data <- grab %>%  # Store bird survey data for later use.
 #### Covariate data ####
 # Canopy data #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -250,7 +250,7 @@ veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%
 
 # Shrub data #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -355,7 +355,7 @@ rm(shrub_data, grab, ind.missing, mod)
 
 # Ground cover #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -493,6 +493,13 @@ landscape_data <- landscape_data %>%
 
 rm(PA_data)
 rm(dat.gis)
+
+# Get alternate grid-level treatment extents for 1-km radius neighborhoods #
+landscape_data <- landscape_data %>% left_join(
+  read.csv("Landscape_Treatment_1km-r_NB.csv", header = T, stringsAsFactors = F) %>% tbl_df %>%
+    rename(Grid = TransNum, YST_1kmNB = MEAN_YST, PctTrt_1kmNB = Treatment.Area) %>%
+    mutate(Year = as.character(Year)),
+  by = c("Grid", "Year"))
 
 ## Trim dates, compile day of year & start time in minutes ##
 library(timeDate)
