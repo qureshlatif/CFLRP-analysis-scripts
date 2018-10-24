@@ -100,33 +100,24 @@ YST.d <- YST.d %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 YST.d[is.na(YST.d)] <- 0
 
-TWIP.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
-TWIP.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
-  landscape_data %>% filter(YearInd == 1) %>% pull(TWIP)
-TWIP.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
-  landscape_data %>% filter(YearInd == 2) %>% pull(TWIP)
-TWIP.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
-  landscape_data %>% filter(YearInd == 3) %>% pull(TWIP)
-TWIP.d <- TWIP.d %>%
+TWIP.d <- tapply(Cov[, "TWIP"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-TWIP.d[which(is.na(TWIP.d))] <- 0
+
+heatload.d <- tapply(Cov[, "heatload"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+TWI.d <- tapply(Cov[, "TWI"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-Rdens.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
-Rdens.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
-  landscape_data %>% filter(YearInd == 1) %>% pull(Rdens)
-Rdens.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
-  landscape_data %>% filter(YearInd == 2) %>% pull(Rdens)
-Rdens.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
-  landscape_data %>% filter(YearInd == 3) %>% pull(Rdens)
-Rdens.d <- Rdens.d %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-Rdens.d[which(is.na(Rdens.d))] <- 0
 
 DOY.b <- Cov[, "DayOfYear"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 
 Time.b <- Cov[, "Time"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
+
+# Save workspace for GOF #
+#save.image("GOF_workspace.RData")
 
 # Assemble the initial values for JAGS.
 u.init <- Y

@@ -13,7 +13,7 @@ nG <- 10 # number of distance categories
 ##############################################
 
 # Data grab #
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 
 BCRDataAPI::reset_api()
 BCRDataAPI::add_columns(c('TransectNum|str',
@@ -80,7 +80,7 @@ grab.proc <- grab %>%
 # Get covariate data #
 # Canopy data #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -102,7 +102,7 @@ veg_data <- BCRDataAPI::get_data() %>%
 
 # Shrub data #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('192.168.137.180')
+BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -152,7 +152,7 @@ dat.cov <- dat.cov %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
   mutate(Trt_time = Year - Trt_status) %>%
   mutate(Trt_time = replace(Trt_time, which(Trt_stat == 0), NA)) %>%
-  select(Point_year, Trt_stat, Trt_time, TWIP, Rdens_1km) %>%
+  select(Point_year, Trt_stat, Trt_time, TWIP, heatload, TWI, Rdens_1km) %>%
   rename(Rdens = Rdens_1km)
 
 dat.cov <- dat.cov %>% left_join(veg_data, by = "Point_year")

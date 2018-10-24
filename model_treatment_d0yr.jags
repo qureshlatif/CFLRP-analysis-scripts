@@ -40,14 +40,14 @@ model {
   tvar.Betad.YST ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.YST <- abs(tvar.Betad.YST) # half-Cauchy distribution
 
-  Betad.TWIP ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betad.TWIP ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betad.TWIP <- abs(tvar.Betad.TWIP) # half-Cauchy distribution
+  Betad.heatload ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.heatload ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.heatload <- abs(tvar.Betad.heatload) # half-Cauchy distribution
   
-  Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
-
+  Betad.TWI ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.TWI ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.TWI <- abs(tvar.Betad.TWI) # half-Cauchy distribution
+  
   # covariates for theta (b)
   Betab.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betab.Trt ~ dt(0,1,1)  # Cauchy distribution
@@ -74,10 +74,6 @@ model {
   tvar.Betaa.DOY ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betaa.DOY <- abs(tvar.Betaa.DOY) # half-Cauchy distribution
 
-  # Betaa.DOY2 ~ dt(0, pow(t.sigma,-2), t.nu)
-  # tvar.Betaa.DOY2 ~ dt(0,1,1)  # Cauchy distribution
-  # sigma.Betaa.DOY2 <- abs(tvar.Betaa.DOY2) # half-Cauchy distribution
-
   Betaa.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betaa.Trt ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betaa.Trt <- abs(tvar.Betaa.Trt) # half-Cauchy distribution
@@ -98,8 +94,8 @@ model {
     # covariates for psi (d)
     bd.ptrt[i] ~ dnorm(Betad.PctTrt, pow(sigma.Betad.PctTrt, -2))
     bd.YST[i] ~ dnorm(Betad.YST, pow(sigma.Betad.YST, -2))
-    bd.TWIP[i] ~ dnorm(Betad.TWIP, pow(sigma.Betad.TWIP, -2))
-    bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
+    bd.TWI[i] ~ dnorm(Betad.TWI, pow(sigma.Betad.TWI, -2))
+    bd.heatload[i] ~ dnorm(Betad.heatload, pow(sigma.Betad.heatload, -2))
 
     # covariates for theta (b)
     bb.trt[i] ~ dnorm(Betab.Trt, pow(sigma.Betab.Trt, -2))
@@ -118,7 +114,7 @@ model {
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
         logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] + bd.YST[i]*YST.d[k, t] +
-          bd.TWIP[i]*TWIP.d[k, t] + bd.Rdens[i]*Rdens.d[k, t]
+          bd.TWI[i]*TWI.d[k, t] + bd.heatload[i]*heatload.d[k, t]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }

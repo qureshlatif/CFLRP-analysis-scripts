@@ -39,7 +39,7 @@ data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_ye
              "PACC40_3km.d", "mnPtchAr_Opn3km.d",
              "mnPerArRatio_Opn3km.d",
              "NNdist_Opn3km.d", "NNdist_Opn3km.d.missing", "NNdist_Opn3km.d.min", "NNdist_Opn3km.d.max",
-             "TWIP.d","Rdens.d",
+             "TWIP.d","heatload.d","TWI.d","Rdens.d",
              "RESQ.b", "RESQ.wts", "RESQ.bm",
              "DOY.b", "Time.b")
 
@@ -58,7 +58,8 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "Betad.mnPtchAr_Opn3km", "sigma.Betad.mnPtchAr_Opn3km",
                 "Betad.mnPerArRatio_Opn3km", "sigma.Betad.mnPerArRatio_Opn3km",
                 "Betad.NNdist_Opn3km", "sigma.Betad.NNdist_Opn3km",
-                "Betad.TWIP", "sigma.Betad.TWIP","Betad.Rdens", "sigma.Betad.Rdens",
+                "Betad.TWIP", "sigma.Betad.TWIP","Betad.TWI", "sigma.Betad.TWI",
+                "Betad.heatload", "sigma.Betad.heatload","Betad.Rdens", "sigma.Betad.Rdens",
                 
                 "Betab.CanCov", "sigma.Betab.CanCov",
                 "Betab.CanCov2", "sigma.Betab.CanCov2",
@@ -83,9 +84,9 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "bd.pers", # For persistence effect
                 "bd.PACC10_3km", "bd.PACC10_3km2", "bd.mnPtchAr_Gap3km", "bd.mnPerArRatio_Gap3km", "bd.NNdist_Gap3km",
                 "bd.PACC40_3km", "bd.PACC40_3km2", "bd.mnPtchAr_Opn3km", "bd.mnPerArRatio_Opn3km", "bd.NNdist_Opn3km",
-                "bd.TWIP", "bd.Rdens",
+                "bd.TWIP", "bd.heatload", "bd.TWI", "bd.Rdens",
                 "bb.CanCov", "bb.CanCov2", "bb.CanHt", "bb.NumSnags", "bb.RCOV_PP", "bb.RCOV_DF",
-                "bb.RCOV_AS", "bb.RSCV_Ladder", "bb.RSCV_Ber", "bb.HerbGrassVol", "bb.SOHtRatio",
+                "bb.RCOV_AS", "bb.shvol", "bb.RSCV_Ladder", "bb.RSCV_Ber", "bb.HerbGrassVol", "bb.SOHtRatio",
                 "bb.RESQ", "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol",
                 
                 "SR.grid", "SR.point")
@@ -300,6 +301,12 @@ NNdist_Opn3km.d[which(is.na(NNdist_Opn3km.d))] <- 0
 
 #TWIP.b <- Cov[, "TWIP"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 TWIP.d <- tapply(Cov[, "TWIP"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+heatload.d <- tapply(Cov[, "heatload"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+TWI.d <- tapply(Cov[, "TWI"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level values

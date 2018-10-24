@@ -13,14 +13,14 @@ data <- list("Y",
              "dclass", "mean.cl", "sd.cl", # needed for distance sampling
              "gridID", "yearID", "nGrid", "n.year", "nPoint",
              "nInd", "nG", "area.band", "area.prop", "breaks", # needed for distance sampling
-             "trt.b", "YST.b", "TWIP.d","RDens.d",
+             "trt.b", "YST.b", "TWIP.d", "TWI.d", "heatload.d", "RDens.d",
              "DOY.b", "Time.b")
 
 parameters <- c("beta0.mean", "beta0.sd", #"N.mean", "p.mean", # Assemble the parameters vector for JAGS (What we want to track).
                 "beta0", "N", "cl.size",
                 "bl.trt",
                 "bl.YST",
-                "bd.TWIP", "bd.RDens",
+                "bd.TWIP", "bd.TWI", "bd.heatload", "bd.RDens",
                 ##___ Hazard rate parameters ___##
                 "a0", "a.Time", "a.Time2",
                 "a.DOY", "a.DOY2",
@@ -63,6 +63,14 @@ YST.b <- Cov[, "Trt_time"] %>%
   replace(., which(is.na(.)), 0)
 
 TWIP.d <- Cov[, "TWIP"]  %>%
+  tapply(gridID, mean) %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+heatload.d <- Cov[, "heatload"]  %>%
+  tapply(gridID, mean) %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+TWI.d <- Cov[, "TWI"]  %>%
   tapply(gridID, mean) %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
