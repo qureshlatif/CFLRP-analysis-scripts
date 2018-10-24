@@ -58,6 +58,7 @@ inits <- function()
        tvar.Betad.PctTrt2 = rnorm(1),
        tvar.Betad.YST = rnorm(1),
        tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1),
+       tvar.Betad.TWI = rnorm(1), tvar.Betad.heatload = rnorm(1),
        tvar.Betab.Trt = rnorm(1), tvar.Betab.YST = rnorm(1),
        tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
        tvar.Betaa.DOY = rnorm(1), tvar.Betaa.DOY2 = rnorm(1),

@@ -100,6 +100,7 @@ inits <- function()
        tvar.Betad.PACC40_3km = rnorm(1), tvar.Betad.PACC40_3km2 = rnorm(1), tvar.Betad.mnPtchAr_Opn3km = rnorm(1),
        tvar.Betad.mnPerArRatio_Opn3km = rnorm(1), tvar.Betad.NNdist_Opn3km = rnorm(1),
        tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1),
+       tvar.Betad.TWI = rnorm(1), tvar.Betad.heatload = rnorm(1), 
        tvar.Betab.CanCov = rnorm(1), tvar.Betab.CanCov2 = rnorm(1), tvar.Betab.CanHt = rnorm(1),
        tvar.Betab.NumSnags = rnorm(1), tvar.Betab.RCOV_PP = rnorm(1),
        tvar.Betab.RCOV_DF = rnorm(1), tvar.Betab.RCOV_AS = rnorm(1),
