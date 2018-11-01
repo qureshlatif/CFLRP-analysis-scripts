@@ -7,7 +7,7 @@ library(ggplot2)
 library(cowplot)
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
-load("GOF_workspace.RData")
+load("Data_compiled.RData")
 
 #_______Script inputs_______#
 plot.obs <- T # Set to T if apparent occupancy is desired in plots.
@@ -22,6 +22,7 @@ dat.pred.grid.fn <- function(ind.spp, PctTrt, mod) {
   dat.pred <- data.frame(x = x, z = z, psi = NA, psi.lo = NA, psi.hi = NA)
   rm(x, z)
   
+  ind.spp <- which(spp.list == spp)
   B0 <- apply(mod$sims.list$d0[, ind.spp, ], 1, mean)
   B1 <- mod$sims.list$bd.ptrt[, ind.spp]
   for(i in 1:nrow(dat.pred)) {
@@ -33,12 +34,12 @@ dat.pred.grid.fn <- function(ind.spp, PctTrt, mod) {
   return(dat.pred)
 }
 
-grd.obs.fn <- function(Y, landscape_data) {
+grd.obs.fn <- function(ind.spp, landscape_data, Y.mat) {
   grd.obs <- landscape_data %>%
     select(gridIndex, YearInd, PctTrt) %>%
     left_join(as.data.frame(Cov) %>%
                 select(gridIndex, YearInd) %>%
-                mutate(Y = Y) %>%
+                mutate(Y = Y.mat[, ind.spp]) %>%
                 dplyr::group_by(gridIndex, YearInd) %>%
                 summarise(Y = any(Y > 0)*1), by = c("gridIndex", "YearInd"))
   grd.obs.sum <- grd.obs %>%
@@ -73,10 +74,10 @@ dat.pred.pnt.fn <- function(ind.spp, trt, yst, mod) {
   return(dat.pred)
 }
 
-pnt.obs.fn <- function(Y, Cov, grd.obs) {
+pnt.obs.fn <- function(ind.spp, Cov, Y.mat, grd.obs) {
   pnt.obs <- Cov %>% tbl_df %>%
     select(gridIndex, YearInd, Trt_stat, Trt_time) %>%
-    mutate(Y = Y) %>%
+    mutate(Y = Y.mat[, ind.spp]) %>%
     left_join(grd.obs %>% rename(Y.grd = Y), by = c("gridIndex", "YearInd")) %>%
     filter(Y.grd == 1) %>%
     select(-Y.grd) %>%
@@ -88,51 +89,9 @@ pnt.obs.fn <- function(Y, Cov, grd.obs) {
 }
 #___________________________#
 
-##____ Tabulate posterior predictive reference values ____##
-signif.ptrt <- (apply(mod$sims.list$bd.ptrt, 2, function(x) quantile(x, prob = 0.025, type = 8)) > 0 |
-                  apply(mod$sims.list$bd.ptrt, 2, function(x) quantile(x, prob = 0.975, type = 8)) < 0)
-signif.trt <- (apply(mod$sims.list$bb.trt, 2, function(x) quantile(x, prob = 0.025, type = 8)) > 0 |
-                 apply(mod$sims.list$bb.trt, 2, function(x) quantile(x, prob = 0.975, type = 8)) < 0)
-signif.yst <- (apply(mod$sims.list$bb.YST, 2, function(x) quantile(x, prob = 0.025, type = 8)) > 0 |
-                 apply(mod$sims.list$bb.YST, 2, function(x) quantile(x, prob = 0.975, type = 8)) < 0)
-spp.subset <- spp.list[which(signif.ptrt | signif.trt | signif.yst)]
-
-for(i in 1:length(spp.subset)) {
-  spp <- spp.subset[i]
-  ind.spp <- which(spp.list == spp)
-  
-  z.grid <- array(NA, dim = c(mod$mcmc.info$n.samples, n.grid, n.year))
-  for(g in 1:n.grid) for(t in 1:n.year) {
-    psi <- expit(mod$sims.list$d0[, ind.spp, t] +
-                   mod$sims.list$bd.ptrt[, ind.spp] * PctTrt.d[g, t] +
-                   mod$sims.list$bd.YST[, ind.spp] * YST.d[g, t] +
-                   mod$sims.list$bd.TWIP[, ind.spp] * TWIP.d[g, t] +
-                   mod$sims.list$bd.Rdens[, ind.spp] * Rdens.d[g, t])
-    z.grid[, g, t] <- rbinom(mod$mcmc.info$n.samples, 1, psi)
-  }
-  
-  ypred <- matrix(NA, nrow = mod$mcmc.info$n.samples, ncol = nrow(Y.mat))
-  for(j in 1:ncol(ypred)) {
-    theta <- expit(mod$sims.list$b0[, ind.spp] +
-                     mod$sims.list$bb.trt[, ind.spp] * Trt.b[j] +
-                     mod$sims.list$bb.YST[, ind.spp] * YST.b[j])
-    z.point <- rbinom(mod$mcmc.info$n.samples, 1,
-                             theta * z.grid[, gridID[j], yearID[j]])
-    p <- expit(mod$sims.list$a0[, ind.spp] +
-                 mod$sims.list$ba.Time[, ind.spp] * Time.b[j] +
-                 mod$sims.list$ba.Time2[, ind.spp] * (Time.b[j]^2) +
-                 mod$sims.list$ba.DOY[, ind.spp] * DOY.b[j] +
-                 mod$sims.list$ba.trt[, ind.spp] * Trt.b[j] +
-                 mod$sims.list$ba.YST[, ind.spp] * YST.b[j])
-    ypred[, j] <- (rbinom(mod$mcmc.info$n.samples, 6, p * z.point) > 0) * 1
-  }
-  
-  
-}
-
 ##____ Grid level plots ____##
 signif.ptrt <- (apply(mod$sims.list$bd.ptrt, 2, function(x) quantile(x, prob = 0.025, type = 8)) > 0 |
-                       apply(mod$sims.list$bd.ptrt, 2, function(x) quantile(x, prob = 0.975, type = 8)) < 0)
+                  apply(mod$sims.list$bd.ptrt, 2, function(x) quantile(x, prob = 0.975, type = 8)) < 0)
 spp.plot <- spp.list[which(signif.ptrt)]
 spp.plot <- sort(spp.plot)
 
@@ -149,7 +108,7 @@ for(i in 1:length(spp.plot)) {
     ylim(0, 1) +
     xlab(NULL) + ylab(NULL)
   if(plot.obs == T) p <- p + geom_point(data = grd.obs$sum, aes(x = x, y = Y), size = 3, color = "red")
-
+  
   p <- ggdraw() +
     draw_plot(p, x = 0, y = 0, width = 1, height = 0.95) +
     draw_plot_label(spp, x = 0.5, y = 1)
@@ -238,6 +197,8 @@ p <- ggdraw() +
                   x = c(0, 0.3), y = c(0.4, 0.05), angle = c(90, 0), size = c(35, 35))
 
 save_plot("Plot_spp_trt_point_occupancy_inspect_GOF.tiff", p, ncol = 4, nrow = 6, dpi = 200)
+
+
 
 
 

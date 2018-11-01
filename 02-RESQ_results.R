@@ -11,8 +11,8 @@ load("Data_compiled_RESQ.RData")
 
 #___ Inputs ___#
 mod <- loadObject("mod_RESQ_treatment_reduced")
-pars <- c("beta0.mean", "beta0.sd", "bl.trt", # Parameters of interest
-          "bl.YST", "bd.TWIP", "bd.RDens",
+pars <- c("beta0.mean", "beta0.sd", "bd.TWIP", "bd.heatload", # Parameters of interest
+          "bd.TWI", "bl.trt", "bl.YST", "bd.RDens",
           "a0", "a.Time", "a.Time2", "a.DOY",
           "a.DOY2", "a.trt", "a.YST", "b")
 tab.out <- "Param_summ_RESQ.csv"
@@ -69,12 +69,12 @@ p.trt <- ggplot(dat.pred, aes(x = x.YST, y = pred)) +
   ylim(0, 23) +
   xlab("Years since treatment") + ylab(NULL)
 
-## TWIP ##
-dat.pred <- data.frame(x = seq(min(Cov[, "TWIP"]), max(Cov[, "TWIP"]), length.out = 10)) %>%
-  mutate(z = (x - mean(Cov[, "TWIP"], na.rm = T)) / sd(Cov[, "TWIP"], na.rm = T)) %>%
+## TWI ##
+dat.pred <- data.frame(x = seq(min(Cov[, "TWI"]), max(Cov[, "TWI"]), length.out = 10)) %>%
+  mutate(z = (x - mean(Cov[, "TWI"], na.rm = T)) / sd(Cov[, "TWI"], na.rm = T)) %>%
   mutate(pred = NA, pred.lo = NA, pred.hi = NA)
 
-B <- mod$sims.list$bd.TWIP
+B <- mod$sims.list$bd.TWI
 for(i in 1:nrow(dat.pred)) {
   beta0 <- mod$sims.list$beta0.mean + B*dat.pred$z[i]
   lambda <- (exp(beta0) / samp.acres) * 100 # Rescale to number per 100 acres
@@ -83,15 +83,15 @@ for(i in 1:nrow(dat.pred)) {
   dat.pred$pred.hi[i] <- quantile(lambda, prob = 0.975, type = 8)
 }
 
-p.TWIP <- ggplot(dat.pred, aes(x = x, y = pred)) +
+p.TWI <- ggplot(dat.pred, aes(x = x, y = pred)) +
   geom_ribbon(data = dat.pred, aes(x = x, ymin = pred.lo, ymax = pred.hi), alpha = 0.3) +
   geom_line(data = dat.pred, aes(x = x, y = pred), size = 2) +
   ylim(0, 23) +
-  xlab("TWIP") + ylab(NULL)
+  xlab("Topographic wetness index") + ylab(NULL)
 
 p <- ggdraw() +
   draw_plot(p.trt, x = 0.05, y = 0, width = 0.475, height = 1) +
-  draw_plot(p.TWIP, x = 0.525, y = 0, width = 0.475, height = 1) +
+  draw_plot(p.TWI, x = 0.525, y = 0, width = 0.475, height = 1) +
   draw_plot_label("RESQ density per 100 acres", x = 0.02, y = 0.15, angle = 90, hjust = 0)
 
 save_plot("figure_RESQ_abundance.tiff", p, ncol = 2, nrow = 1, dpi = 200)

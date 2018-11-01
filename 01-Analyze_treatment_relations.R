@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #_____ Script inputs _____#
-model.file <- "CFLRP-analysis-scripts/model_treat2_d0yr.jags"
+model.file <- "CFLRP-analysis-scripts/model_treatment_d0yr.jags"
 
 # MCMC values
 nc <- 3 # number of chains
@@ -15,12 +15,12 @@ nb <- 1 #1000 # burn in
 ni <- 10 #35000 # number of iterations
 nt <- 1 #10 # thinning
 
-save.out <- "mod_treat2_d0yr"
+save.out <- "mod_treatment_d0yr"
 #_________________________#
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
-             "Trt.b","PctTrt.d", "YST.b", "YST.d", "TWIP.d","Rdens.d",
+             "Trt.b","PctTrt.d", "YST.b", "TWIP.d","TWI.d","heatload.d", "Rdens.d", #"YST.d", 
              "DOY.b", "Time.b")
 
 # Stuff to save from JAGS
@@ -32,6 +32,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "Betad.PctTrt2", "sigma.Betad.PctTrt2",
                 "Betad.YST", "sigma.Betad.YST",
                 "Betad.TWIP", "sigma.Betad.TWIP","Betad.Rdens", "sigma.Betad.Rdens",
+                "Betad.TWI", "sigma.Betad.TWI", "Betad.heatload", "sigma.Betad.heatload",
                 "Betab.Trt", "sigma.Betab.Trt", "Betab.YST", "sigma.Betab.YST",
                 "Betaa.Time", "sigma.Betaa.Time", "Betaa.Time2", "sigma.Betaa.Time2",
                 "Betaa.DOY", "sigma.Betaa.DOY",
@@ -41,12 +42,10 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "d0", "b0", "a0",
                 "bd.yr", # For year effect
                 "bd.pers", # For persistence effect
-                "bd.ptrt",
-                "bd.ptrt2",
-                "bd.YST",
-                "bd.TWIP", "bd.Rdens",
-                "bb.trt", "bb.YST",
-                "ba.Time", "ba.Time2", "ba.DOY", "ba.trt", "ba.YST", "ba.DOY2",
+                "bd.ptrt", "bd.ptrt2", "bd.YST",
+                "bd.TWIP", "bd.TWI", "bd.heatload", "bd.Rdens",
+                "bb.trt", "bb.YST", "ba.Time", "ba.Time2",
+                "ba.DOY", "ba.trt", "ba.YST", "ba.DOY2",
                 
                 "SR.grid", "SR.point")
 
@@ -79,27 +78,27 @@ n.spp <- dim(Y)[2]
 Trt.b <- Cov[, "Trt_stat"] # Point-level values
 PctTrt.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
 PctTrt.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
-  landscape_data %>% filter(YearInd == 1) %>% pull(PctTrt)
+  landscape_data %>% filter(YearInd == 1) %>% pull(PctTrt_1kmNB)
 PctTrt.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
-  landscape_data %>% filter(YearInd == 2) %>% pull(PctTrt)
+  landscape_data %>% filter(YearInd == 2) %>% pull(PctTrt_1kmNB)
 PctTrt.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
-  landscape_data %>% filter(YearInd == 3) %>% pull(PctTrt)
+  landscape_data %>% filter(YearInd == 3) %>% pull(PctTrt_1kmNB)
 PctTrt.d <- PctTrt.d %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 PctTrt.d[which(is.na(PctTrt.d))] <- 0
 
 YST.b <- Cov[, "Trt_time"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 YST.b[is.na(YST.b)] <- 0
-YST.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
-YST.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
-  landscape_data %>% filter(YearInd == 1) %>% pull(Trt_time)
-YST.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
-  landscape_data %>% filter(YearInd == 2) %>% pull(Trt_time)
-YST.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
-  landscape_data %>% filter(YearInd == 3) %>% pull(Trt_time)
-YST.d <- YST.d %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-YST.d[is.na(YST.d)] <- 0
+# YST.d <- matrix(NA, nrow = max(gridID), ncol = max(yearID))
+# YST.d[landscape_data %>% filter(YearInd == 1) %>% pull(gridIndex), 1] <-
+#   landscape_data %>% filter(YearInd == 1) %>% pull(Trt_time)
+# YST.d[landscape_data %>% filter(YearInd == 2) %>% pull(gridIndex), 2] <-
+#   landscape_data %>% filter(YearInd == 2) %>% pull(Trt_time)
+# YST.d[landscape_data %>% filter(YearInd == 3) %>% pull(gridIndex), 3] <-
+#   landscape_data %>% filter(YearInd == 3) %>% pull(Trt_time)
+# YST.d <- YST.d %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# YST.d[is.na(YST.d)] <- 0
 
 TWIP.d <- tapply(Cov[, "TWIP"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))

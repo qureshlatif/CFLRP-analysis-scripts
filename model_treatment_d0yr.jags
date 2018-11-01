@@ -36,10 +36,6 @@ model {
   tvar.Betad.PctTrt ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.PctTrt <- abs(tvar.Betad.PctTrt) # half-Cauchy distribution
 
-  Betad.YST ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betad.YST ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betad.YST <- abs(tvar.Betad.YST) # half-Cauchy distribution
-
   Betad.heatload ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betad.heatload ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.heatload <- abs(tvar.Betad.heatload) # half-Cauchy distribution
@@ -57,10 +53,6 @@ model {
   tvar.Betab.YST ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betab.YST <- abs(tvar.Betab.YST) # half-Cauchy distribution
 
-  Betab.TWIP ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betab.TWIP ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betab.TWIP <- abs(tvar.Betab.TWIP) # half-Cauchy distribution
-  
   # covariates for p (a)
   Betaa.Time ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betaa.Time ~ dt(0,1,1)  # Cauchy distribution
@@ -93,7 +85,6 @@ model {
 
     # covariates for psi (d)
     bd.ptrt[i] ~ dnorm(Betad.PctTrt, pow(sigma.Betad.PctTrt, -2))
-    bd.YST[i] ~ dnorm(Betad.YST, pow(sigma.Betad.YST, -2))
     bd.TWI[i] ~ dnorm(Betad.TWI, pow(sigma.Betad.TWI, -2))
     bd.heatload[i] ~ dnorm(Betad.heatload, pow(sigma.Betad.heatload, -2))
 
@@ -105,7 +96,6 @@ model {
     ba.Time[i] ~ dnorm(Betaa.Time, pow(sigma.Betaa.Time, -2))
     ba.Time2[i] ~ dnorm(Betaa.Time2, pow(sigma.Betaa.Time2, -2))
     ba.DOY[i] ~ dnorm(Betaa.DOY, pow(sigma.Betaa.DOY, -2))
-    # ba.DOY2[i] ~ dnorm(Betaa.DOY2, pow(sigma.Betaa.DOY2, -2))
     ba.trt[i] ~ dnorm(Betaa.Trt, pow(sigma.Betaa.Trt, -2))
     ba.YST[i] ~ dnorm(Betaa.YST, pow(sigma.Betaa.YST, -2))
 
@@ -113,8 +103,8 @@ model {
     w[i] ~ dbern(omega)
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
-        logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] + bd.YST[i]*YST.d[k, t] +
-          bd.TWI[i]*TWI.d[k, t] + bd.heatload[i]*heatload.d[k, t]
+        logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] +
+          bd.TWI[i]*TWI.d[k] + bd.heatload[i]*heatload.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }

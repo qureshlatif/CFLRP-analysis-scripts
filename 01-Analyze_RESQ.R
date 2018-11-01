@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled_RESQ.RData")
 
 #### Script inputs ####
-model.file <- "CFLRP-analysis-scripts/model_RESQ_treatment_global.jags"
+model.file <- "CFLRP-analysis-scripts/model_RESQ_treatment_reduced.jags"
 
 data <- list("Y",
              "dclass", "mean.cl", "sd.cl", # needed for distance sampling
@@ -36,7 +36,7 @@ nb <- 5000
 ni <- 80000
 nt <- 10
 
-save.out <- "mod_RESQ_treatment_global"
+save.out <- "mod_RESQ_treatment_reduced"
 
 Y <- Y.dist
 mean.cl <- max(1.001, mean(dclass[, "CL_Count"]))

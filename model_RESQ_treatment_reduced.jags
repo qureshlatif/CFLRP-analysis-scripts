@@ -11,14 +11,12 @@
       a.Time ~ dnorm(0, 0.1)
       a.Time2 ~ dnorm(0, 0.1)
       a.DOY ~ dnorm(0, 0.1)
-      a.DOY2 ~ dnorm(0, 0.1)
       a.trt ~ dnorm(0, 0.1)
       a.YST ~ dnorm(0, 0.1)
       b ~ dunif(0, 100)
 
       # Priors on lambda
       bd.TWI ~ dnorm(0, 0.1)
-      bd.heatload ~ dnorm(0, 0.1)
 
       beta0.mean ~ dnorm(0, 0.1)
       beta0.sd ~ dunif(0, 10)
@@ -27,7 +25,7 @@
       for(t in 1:n.year) {
         for(g in 1:nGrid) {
           beta00[g, t] ~ dnorm(beta0.mean, beta0.tau)
-          beta0[g, t] <- beta00[g, t] + bd.TWI*TWI.d[g] + bd.heatload*heatload.d[g]
+          beta0[g, t] <- beta00[g, t] + bd.TWI*TWI.d[g]
         }
       }
 

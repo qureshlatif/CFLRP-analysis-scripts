@@ -11,7 +11,7 @@ load("Data_compiled.RData")
 mod <- loadObject("mod_treatment_d0yr")
 
 # Tabulate parameter estimates
-pars <- c("bd.ptrt", "bd.YST", "bb.trt", "bb.YST")
+pars <- c("bd.ptrt", "bb.trt", "bb.YST")
 cols <- (c("", ".lo", ".hi") %>%
            expand.grid(pars, stringsAsFactors = F) %>%
            select(Var2, Var1) %>%
@@ -34,8 +34,6 @@ dat.plt <- tbl_pars %>% tbl_df() %>%
 
 dat.supp <- dat.plt %>% filter(bd.ptrt.lo > 0 |
                                  bd.ptrt.hi < 0 |
-                                 bd.YST.lo > 0 |
-                                 bd.YST.hi < 0 |
                                  bb.trt.lo > 0 |
                                  bb.trt.hi < 0 |
                                  bb.YST.lo > 0 |
@@ -72,33 +70,6 @@ pd.ptrt.supp <- ggplot(dat = dat.supp, aes(x = index, y = bd.ptrt)) +
   scale_y_continuous(lim = c(min(dat.plt$bd.ptrt.lo), max(dat.plt$bd.ptrt.hi))) +
   scale_color_manual(values = c("#000000", "#D55E00")) +
   ylab(expression(hat(beta)["percent treated"])) + xlab(NULL) +
-  theme(axis.title.y=element_text(size=30)) +
-  theme(axis.title.x=element_text(size=30)) +
-  theme(axis.text.x=element_text(size=15)) +
-  theme(axis.text.y=element_text(size=15)) +
-  guides(color = F)
-
-pd.YST <- ggplot(dat = dat.plt, aes(x = index, y = bd.YST)) +
-  geom_errorbar(aes(ymin = bd.YST.lo, ymax = bd.YST.hi), size=1, width=0) +
-  geom_point(size = 2.5) + 
-  geom_hline(yintercept = 0) +
-  coord_flip() +
-  scale_x_continuous(breaks = NULL, labels = NULL, expand=c(0, 1)) +
-  scale_y_continuous(lim = c(min(dat.plt$bd.YST.lo), max(dat.plt$bd.YST.hi))) +
-  ylab(NULL) + xlab(NULL) +
-  theme(axis.title.y=element_text(size=30)) +
-  theme(axis.title.x=element_text(size=30)) +
-  theme(axis.text.x=element_text(size=15)) +
-  theme(axis.text.y=element_text(size=15))
-
-pd.YST.supp <- ggplot(dat = dat.supp, aes(x = index, y = bd.YST)) +
-  geom_errorbar(aes(ymin = bd.YST.lo, ymax = bd.YST.hi), size=1, width=0) +
-  geom_point(size = 2.5) + 
-  geom_hline(yintercept = 0) +
-  coord_flip() +
-  scale_x_continuous(breaks = 1:nrow(dat.supp), labels = dat.supp$Spp, expand=c(0, 1)) +
-  scale_y_continuous(lim = c(min(dat.plt$bd.YST.lo), max(dat.plt$bd.YST.hi))) +
-  ylab(expression(hat(beta)["mean years since treatment"])) + xlab(NULL) +
   theme(axis.title.y=element_text(size=30)) +
   theme(axis.title.x=element_text(size=30)) +
   theme(axis.text.x=element_text(size=15)) +
@@ -162,19 +133,17 @@ pb.YST.supp <- ggplot(dat = dat.supp, aes(x = index, y = bb.YST)) +
   guides(color = F)
 
 p <- ggdraw() + 
-  draw_plot(pd.ptrt, x = 0.05, y = 0.6333333, width = 0.2375, height = 0.3166667) +
-  draw_plot(pd.ptrt.supp, x = 0.05, y = 0, width = 0.2375, height = 0.6333333) +
-  draw_plot(pd.YST, x = 0.2875, y = 0.6333333, width = 0.2375, height = 0.3166667) +
-  draw_plot(pd.YST.supp, x = 0.2875, y = 0, width = 0.2375, height = 0.6333333) +
-  draw_plot(pb.trt, x = 0.525, y = 0.6333333, width = 0.2375, height = 0.3166667) +
-  draw_plot(pb.trt.supp, x = 0.525, y = 0, width = 0.2375, height = 0.6333333) +
-  draw_plot(pb.YST, x = 0.7625, y = 0.6333333, width = 0.2375, height = 0.3166667) +
-  draw_plot(pb.YST.supp, x = 0.7625, y = 0, width = 0.2375, height = 0.6333333) +
+  draw_plot(pd.ptrt, x = 0.05, y = 0.6333333, width = 0.3166667, height = 0.3166667) +
+  draw_plot(pd.ptrt.supp, x = 0.05, y = 0, width = 0.3166667, height = 0.6333333) +
+  draw_plot(pb.trt, x = 0.3666667, y = 0.6333333, width = 0.3166667, height = 0.3166667) +
+  draw_plot(pb.trt.supp, x = 0.3666667, y = 0, width = 0.3166667, height = 0.6333333) +
+  draw_plot(pb.YST, x = 0.6833333, y = 0.6333333, width = 0.3166667, height = 0.3166667) +
+  draw_plot(pb.YST.supp, x = 0.6833333, y = 0, width = 0.3166667, height = 0.6333333) +
   draw_plot_label(c("Species", "Grid scale", "Point scale"),
-                  x = c(0, 0.25, 0.7),
+                  x = c(0, 0.15, 0.63),
                   y = c(0.5, 0.98, 0.98),
                   size = c(40, 30, 30),
                   angle = c(90, 0, 0),
                   hjust = c(0, 0, 0))
 
-save_plot("Plot_trt_effects.tiff", p, ncol = 4, nrow = 4.5, dpi = 200)
+save_plot("Plot_trt_effects.tiff", p, ncol = 3, nrow = 4.5, dpi = 200)
