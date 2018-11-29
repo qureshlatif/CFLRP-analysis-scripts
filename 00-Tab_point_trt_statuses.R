@@ -2,67 +2,61 @@ library(foreign)
 library(dplyr)
 library(stringr)
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
+load("Data_compiled.RData")
 
-dat <- read.dbf("Bird_survey_point_coords.dbf", as.is = T) %>%
-  mutate(Point = str_c(TransectNu, "-", Point %>% str_pad("0", width = 2, side = "left"))) %>%
-  mutate(SuperStrat = str_sub(TransectNu, 1, 8))
+# dat <- read.dbf("Bird_survey_point_coords.dbf", as.is = T) %>%
+#   mutate(Point = str_c(TransectNu, "-", Point %>% str_pad("0", width = 2, side = "left"))) %>%
+#   mutate(SuperStrat = str_sub(TransectNu, 1, 8))
 
 # Treatment status by year surveyed and strata #
-sum.point <- dat %>%
-  summarize(Trt_CFLRP = sum(Trt_status <= 2014 & SuperStrat == "CO-CFLRP", na.rm = T),
-            Cnt_CFLRP = sum(Trt_status > 2014 & SuperStrat == "CO-CFLRP", na.rm = T) +
-              sum(SuperStrat == "CO-CFLRP" & is.na(Trt_status)),
-            Trt_IMBCR = sum(Trt_status <= 2014 & SuperStrat == "CO-BCR16", na.rm = T),
-            Cnt_IMBCR = sum(Trt_status > 2014 & SuperStrat == "CO-BCR16", na.rm = T) +
-              sum(SuperStrat == "CO-BCR16" & is.na(Trt_status))) %>%
-  mutate(Year = 2014) %>%
-  bind_rows(dat %>%
-              summarize(Trt_CFLRP = sum(Trt_status <= 2015 & SuperStrat == "CO-CFLRP", na.rm = T),
-                        Cnt_CFLRP = sum(Trt_status > 2015 & SuperStrat == "CO-CFLRP", na.rm = T) +
-                          sum(SuperStrat == "CO-CFLRP" & is.na(Trt_status)),
-                        Trt_IMBCR = sum(Trt_status <= 2015 & SuperStrat == "CO-BCR16", na.rm = T),
-                        Cnt_IMBCR = sum(Trt_status > 2015 & SuperStrat == "CO-BCR16", na.rm = T) +
-                          sum(SuperStrat == "CO-BCR16" & is.na(Trt_status))) %>%
-              mutate(Year = 2015)) %>%
-  bind_rows(dat %>%
-              summarize(Trt_CFLRP = sum(Trt_status <= 2016 & SuperStrat == "CO-CFLRP", na.rm = T),
-                        Cnt_CFLRP = sum(Trt_status > 2016 & SuperStrat == "CO-CFLRP", na.rm = T) +
-                          sum(SuperStrat == "CO-CFLRP" & is.na(Trt_status)),
-                        Trt_IMBCR = sum(Trt_status <= 2016 & SuperStrat == "CO-BCR16", na.rm = T),
-                        Cnt_IMBCR = sum(Trt_status > 2016 & SuperStrat == "CO-BCR16", na.rm = T) +
-                          sum(SuperStrat == "CO-BCR16" & is.na(Trt_status))) %>%
-              mutate(Year = 2016)) %>%
-  select(Year, Trt_CFLRP:Cnt_IMBCR)
+sum.point <- veg_data %>%
+  mutate(Year = Point_year %>% str_sub(-4, -1)) %>%
+  group_by(Year) %>%
+  summarize(Trt_CFLRP = sum(Trt_stat == 1 & (str_sub(Point_year, 4, 8) == "CFLRP")),
+            Cnt_CFLRP = sum(Trt_stat == 0 & (str_sub(Point_year, 4, 8) == "CFLRP")),
+            Trt_IMBCR = sum(Trt_stat == 1 & (str_sub(Point_year, 4, 8) == "BCR16")),
+            Cnt_IMBCR = sum(Trt_stat == 0 & (str_sub(Point_year, 4, 8) == "BCR16"))) %>%
+  bind_rows(data.frame(Year = "ALL", stringsAsFactors = F) %>%
+              mutate(Trt_CFLRP = veg_data %>%
+                       filter(str_sub(Point_year, 4, 8) == "CFLRP" &
+                                Trt_stat ==1) %>%
+                       pull(Point_year) %>% str_sub(1, -6) %>% unique %>% length,
+                     Cnt_CFLRP = veg_data %>%
+                       filter(str_sub(Point_year, 4, 8) == "CFLRP" &
+                                Trt_stat == 0) %>%
+                       pull(Point_year) %>% str_sub(1, -6) %>% unique %>% length,
+                     Trt_IMBCR = veg_data %>%
+                       filter(str_sub(Point_year, 4, 8) == "BCR16" &
+                                Trt_stat == 1) %>%
+                       pull(Point_year) %>% str_sub(1, -6) %>% unique %>% length,
+                     Cnt_IMBCR = veg_data %>%
+                       filter(str_sub(Point_year, 4, 8) == "BCR16" &
+                                Trt_stat == 0) %>%
+                       pull(Point_year) %>% str_sub(1, -6) %>% unique %>% length))
 
-sum.grid <- dat %>%
-  group_by(TransectNu) %>%
-  summarize(Trt = sum(Trt_status <= 2014, na.rm = T)) %>%
-  ungroup %>%
-  mutate(SuperStrat = str_sub(TransectNu, 1, 8)) %>%
-  summarize(Trt_CFLRP = sum(Trt > 0 & SuperStrat == "CO-CFLRP"),
-            Cnt_CFLRP = sum(Trt == 0 & SuperStrat == "CO-CFLRP"),
-            Trt_IMBCR = sum(Trt > 0 & SuperStrat == "CO-BCR16"),
-            Cnt_IMBCR = sum(Trt == 0 & SuperStrat == "CO-BCR16")) %>%
-  mutate(Year = 2014) %>%
-  bind_rows(dat %>%  group_by(TransectNu) %>%
-              summarize(Trt = sum(Trt_status <= 2015, na.rm = T)) %>%
-              ungroup %>%
-              mutate(SuperStrat = str_sub(TransectNu, 1, 8)) %>%
-              summarize(Trt_CFLRP = sum(Trt > 0 & SuperStrat == "CO-CFLRP"),
-                        Cnt_CFLRP = sum(Trt == 0 & SuperStrat == "CO-CFLRP"),
-                        Trt_IMBCR = sum(Trt > 0 & SuperStrat == "CO-BCR16"),
-                        Cnt_IMBCR = sum(Trt == 0 & SuperStrat == "CO-BCR16")) %>%
-              mutate(Year = 2015)) %>%
-  bind_rows(dat %>%  group_by(TransectNu) %>%
-              summarize(Trt = sum(Trt_status <= 2016, na.rm = T)) %>%
-              ungroup %>%
-              mutate(SuperStrat = str_sub(TransectNu, 1, 8)) %>%
-              summarize(Trt_CFLRP = sum(Trt > 0 & SuperStrat == "CO-CFLRP"),
-                        Cnt_CFLRP = sum(Trt == 0 & SuperStrat == "CO-CFLRP"),
-                        Trt_IMBCR = sum(Trt > 0 & SuperStrat == "CO-BCR16"),
-                        Cnt_IMBCR = sum(Trt == 0 & SuperStrat == "CO-BCR16")) %>%
-              mutate(Year = 2016)) %>%
-  select(Year, Trt_CFLRP:Cnt_IMBCR)
+sum.grid <- landscape_data %>%
+  group_by(Year) %>%
+  summarize(Trt_CFLRP = sum(PctTrt_1kmNB > 0 & (str_sub(Grid, 4, 8) == "CFLRP")),
+            Cnt_CFLRP = sum(PctTrt_1kmNB == 0 & (str_sub(Grid, 4, 8) == "CFLRP")),
+            Trt_IMBCR = sum(PctTrt_1kmNB > 0 & (str_sub(Grid, 4, 8) == "BCR16")),
+            Cnt_IMBCR = sum(PctTrt_1kmNB == 0 & (str_sub(Grid, 4, 8) == "BCR16"))) %>%
+  bind_rows(data.frame(Year = "ALL", stringsAsFactors = F) %>%
+              mutate(Trt_CFLRP = landscape_data %>%
+                       filter(str_sub(Grid, 4, 8) == "CFLRP" &
+                                PctTrt_1kmNB > 0) %>%
+                       pull(Grid) %>% unique %>% length,
+                     Cnt_CFLRP = landscape_data %>%
+                       filter(str_sub(Grid, 4, 8) == "CFLRP" &
+                                PctTrt_1kmNB == 0) %>%
+                       pull(Grid) %>% unique %>% length,
+                     Trt_IMBCR = landscape_data %>%
+                       filter(str_sub(Grid, 4, 8) == "BCR16" &
+                                PctTrt_1kmNB > 0) %>%
+                       pull(Grid)%>% unique %>% length,
+                     Cnt_IMBCR = landscape_data %>%
+                       filter(str_sub(Grid, 4, 8) == "BCR16" &
+                                PctTrt_1kmNB == 0) %>%
+                       pull(Grid) %>% unique %>% length))
 
 sum.table <- sum.grid %>%
   mutate(Level = "Grid") %>%
@@ -73,8 +67,6 @@ sum.table <- sum.grid %>%
 write.csv(sum.table, "Treatment_sampling_summary.csv", row.names = F)
 
 #### Tabulate sample sizes by treatment status and timing ####
-load("Data_compiled.RData")
-
 dat <- Cov %>% tbl_df %>%
   mutate(Point = row.names(Cov)) %>%
   select(Point, gridIndex:Rdens)

@@ -341,3 +341,48 @@ p <- ggdraw() +
                   angle = c(90, 0, 0, 0, 0), size = c(20, 15, 15, 15, 15), hjust = c(0, 0, 0, 0, 0))
 
 save_plot("Plot_spp_contrasting_relations.tiff", p, ncol = 3, nrow = 2.5, dpi = 200)
+
+##____ RBNU ____##
+spp <- "RBNU"
+ind.spp <- which(spp.list == spp)
+
+# Grid level #
+dat.pred <- dat.pred.grid.fn(ind.spp, landscape_data$PctTrt, mod)
+p.grd <- ggplot(dat.pred, aes(x = x, y = psi)) +
+  geom_ribbon(aes(ymin = psi.lo, ymax = psi.hi), alpha = 0.4) +
+  geom_line(size = 2) +
+  ylim(0, 1) +
+  xlab(NULL) + ylab(NULL)
+
+p.grd <- ggdraw() +
+  draw_plot(p.grd, x = 0, y = 0, width = 1, height = 0.95) +
+  draw_plot_label(spp, x = 0.4, y = 1)
+
+dat.pred <- dat.pred.pnt.fn(ind.spp, Cov[, "Trt_stat"], Cov[, "Trt_time"], mod)
+p.pnt <- ggplot(dat.pred, aes(x = x, y = psi)) +
+  geom_line(data = dat.pred %>% filter(x.trt == 1), size = 1, linetype = "dashed") +
+  geom_point(data = dat.pred %>% filter(x.trt == 1), size = 3, shape = 16) +
+  geom_errorbar(data = dat.pred %>% filter(x.trt == 1),
+                aes(ymin = psi.lo, ymax = psi.hi), width = 0.2) +
+  geom_errorbar(data = dat.pred %>% filter(x.trt == 0),
+                aes(x = x, ymin = psi.lo, ymax = psi.hi), width = 0.2) +
+  geom_point(data = dat.pred %>% filter(x.trt == 0), size = 3, shape = 15) +
+  scale_x_continuous(breaks = c(1, 2, 3), labels = c("pre-trt", "trt yr 1", "trt yr 10")) +
+  ylim(0, 1) +
+  xlab(NULL) + ylab(NULL)
+
+p.pnt <- ggdraw() +
+  draw_plot(p.pnt, x = 0, y = 0, width = 1, height = 0.95) +
+  draw_plot_label(spp, x = 0.4, y = 1)
+
+p <- ggdraw() +
+  draw_plot(p.grd, x = 0, y = 0, width = 0.5, height = 1) +
+  draw_plot(p.pnt, x = 0.5, y = 0, width = 0.5, height = 1)
+
+p <- ggdraw() +
+  draw_plot(p, x = 0.05, y = 0.05, width = 0.95, height = 0.95) +
+  draw_plot_label(c("Occupancy", "Percent landscape treated", "Treatment status of point"),
+                  x = c(0, 0.15, 0.65), y = c(0.38, 0.08, 0.08),
+                  angle = c(90, 0, 0), hjust = c(0, 0, 0))
+
+save_plot("Plot_spp_RBNU.tiff", p, ncol = 2, nrow = 1, dpi = 200)

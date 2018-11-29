@@ -36,10 +36,6 @@ model {
   tvar.Betad.PACC10_3km ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.PACC10_3km <- abs(tvar.Betad.PACC10_3km) # half-Cauchy distribution
 
-  Betad.mnPtchAr_Gap3km ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betad.mnPtchAr_Gap3km ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betad.mnPtchAr_Gap3km <- abs(tvar.Betad.mnPtchAr_Gap3km) # half-Cauchy distribution
-
   Betad.PACC40_3km ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betad.PACC40_3km ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.PACC40_3km <- abs(tvar.Betad.PACC40_3km) # half-Cauchy distribution
@@ -56,9 +52,9 @@ model {
   tvar.Betad.heatload ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.heatload <- abs(tvar.Betad.heatload) # half-Cauchy distribution
   
-  Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
-  tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
-  sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
+  #Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
+  #tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
+  #sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
 
   # covariates for theta (b)
   Betab.CanCov ~ dt(0, pow(t.sigma, -2), t.nu)
@@ -151,12 +147,11 @@ model {
 
     # covariates for psi (d)
     bd.PACC10_3km[i] ~ dnorm(Betad.PACC10_3km, pow(sigma.Betad.PACC10_3km, -2))
-    bd.mnPtchAr_Gap3km[i] ~ dnorm(Betad.mnPtchAr_Gap3km, pow(sigma.Betad.mnPtchAr_Gap3km, -2))
     bd.PACC40_3km[i] ~ dnorm(Betad.PACC40_3km, pow(sigma.Betad.PACC40_3km, -2))
     bd.mnPerArRatio_Opn3km[i] ~ dnorm(Betad.mnPerArRatio_Opn3km, pow(sigma.Betad.mnPerArRatio_Opn3km, -2))
     bd.TWI[i] ~ dnorm(Betad.TWI, pow(sigma.Betad.TWI, -2))
     bd.heatload[i] ~ dnorm(Betad.heatload, pow(sigma.Betad.heatload, -2))
-    bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
+    #bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
 
     # covariates for theta (b)
     bb.CanCov[i] ~ dnorm(Betab.CanCov, pow(sigma.Betab.CanCov, -2))
@@ -180,9 +175,9 @@ model {
     w[i] ~ dbern(omega)
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
-        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] + bd.mnPtchAr_Gap3km[i]*mnPtchAr_Gap3km.d[k, t] +
-          bd.PACC40_3km[i]*PACC40_3km.d[k, t] + bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] + bd.TWI[i]*TWI.d[k] +
-          bd.heatload[i]*heatload.d[k] + bd.Rdens[i]*Rdens.d[k]
+        logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] +
+          bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] + bd.TWI[i]*TWI.d[k] +
+          bd.heatload[i]*heatload.d[k] #+ bd.Rdens[i]*Rdens.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }

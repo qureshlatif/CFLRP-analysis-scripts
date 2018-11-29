@@ -7,14 +7,11 @@ load("Data_compiled.RData")
 
 dat.point <- Cov %>% tbl_df %>%
   mutate(Point = row.names(Cov)) %>%
-  select(Point, gridIndex:Rdens)
+  select(Point, gridIndex:ForAR)
 
 dat.grid <- landscape_data %>%
-  left_join(
-    dat.point %>% group_by(gridIndex) %>%
-      summarise(percTrt = (sum(Trt_stat) / n()) * 100,
-                Trt_time = mean(Trt_time, na.rm = T)),
-    by = "gridIndex")
+  select(Grid:NNdist_Opn3km, heatload:PctTrt_1kmNB) %>%
+  rename(percTrt = PctTrt_1kmNB)
 
 #___________ Plotting functions ____________#
 p.stat.fn <- function(dat, ylab) {
@@ -48,11 +45,19 @@ p.stitch.fn <- function(p.stat, p.time) {
     draw_plot(p.time, x = .5, y = 0, width = .5, height = 1)
   return(p)
 }
+
+p.ptrt.fn <- function(dat, ylab) {
+  p <- ggplot(dat, aes(x = percTrt, y = Y)) +
+    geom_point(alpha = 0.1) +
+    geom_smooth(color = "blue") +
+    xlab(NULL) + ylab(ylab)
+  return(p)
+}
 #__________________________________#
 
 #### Point-level relations ####
 ## Tabulate correlation coefficients ##
-vars <- names(dat.point)[c(6:12, 15:19, 21, 22)]
+vars <- names(dat.point)[c(6:8, 10:12, 15:19, 21, 22)]
 cols <- c("Trt_status", "Trt_time")
 out <- matrix("", nrow = length(vars), ncol = length(cols),
               dimnames = list(vars, cols))
@@ -67,7 +72,8 @@ for(i in 1:length(vars)) {
   ifelse(p < 0.05, p.sig <- "*", p.sig <- "")
   out[vars[i], "Trt_status"] <- str_c(r, " (", n, ")", p.sig)
 
-  v2 <- dat.point$Trt_time
+  v1 <- dat.point %>% filter(Trt_stat == 1) %>% pull(vars[i])
+  v2 <- dat.point %>% filter(Trt_stat == 1) %>% pull(Trt_time)
   r <- cor(v1, v2, use = "complete") %>%
     round(digits = 3)
   n <- sum(!is.na(v1) & !is.na(v2))
@@ -77,6 +83,24 @@ for(i in 1:length(vars)) {
 }
 
 out %>% write.csv("Trt_hab_correlations_point.csv", row.names = T)
+
+## Multiple regression models ##
+vars <- names(dat.point)[c(6:8, 10:12, 15, 17:19, 21)]
+
+mod <- glm(str_c("Trt_stat ~ ", str_c(vars, collapse = "+")), data = dat.point, family = "binomial")
+summary(mod)$coefficients %>% write.csv("TrtStat_hab_relations_point.csv", row.names = T)
+
+mod <- glm(str_c("Trt_time ~ ", str_c(vars, collapse = "+")), data = dat.point %>% filter(Trt_stat == 1), family = "poisson")
+summary(mod)$coefficients %>% write.csv("TrtTime_hab_relations_point.csv", row.names = T)
+
+## Correlations among habitat variables ##
+cor(dat.point[, c(6:8, 10:12, 15:19, 21, 22)], use = "complete") %>%
+  round(digits = 3) %>%
+  write.csv("Correlations_all_points.csv", row.names = T)
+
+cor((dat.point %>% filter(Trt_stat == 1))[, c(6:8, 10:12, 15:19, 21, 22)], use = "complete") %>%
+  round(digits = 3) %>%
+  write.csv("Correlations_treated_points.csv", row.names = T)
 
 ## Plot vegetation (mehanistic factors) VS outbreak metrics ##
 
@@ -165,8 +189,12 @@ save_plot("figure_trt_vs_hab_point.tiff", p.point, ncol = 2, nrow = 3.5, dpi = 3
 
 #### Grid-level relations ####
 ## Tabulate correlation coefficients ##
-vars <- names(dat.grid)[5:18]
-cols <- c("percTrt", "Trt_time")
+vars <- names(dat.grid)[c(5, 6, 12, 14, 17:18)]
+
+mod <- glm(str_c("percTrt ~ ", str_c(vars, collapse = "+")), data = dat.grid, family = quasibinomial())
+summary(mod)$coefficients %>% write.csv("TrtPerc_hab_relations_grid.csv", row.names = T)
+
+cols <- c("percTrt")
 out <- matrix("", nrow = length(vars), ncol = length(cols),
               dimnames = list(vars, cols))
 
@@ -179,20 +207,38 @@ for(i in 1:length(vars)) {
   p <- cor.test(v1, v2, alternative = "two.sided", method = "pearson")$p.value
   ifelse(p < 0.05, p.sig <- "*", p.sig <- "")
   out[vars[i], "percTrt"] <- str_c(r, " (", n, ")", p.sig)
-  
-  v2 <- dat.grid$Trt_time
-  r <- cor(v1, v2, use = "complete") %>%
-    round(digits = 3)
-  n <- sum(!is.na(v1) & !is.na(v2))
-  p <- cor.test(v1, v2, alternative = "two.sided", method = "pearson")$p.value
-  ifelse(p < 0.05, p.sig <- "*", p.sig <- "")
-  out[vars[i], "Trt_time"] <- str_c(r, " (", n, ")", p.sig)
 }
 
 out %>% write.csv("Trt_hab_correlations_grid.csv", row.names = T)
 
-## Plot vegetation (mehanistic factors) VS outbreak metrics...(not done yet) ##
+## Plot vegetation (mehanistic factors) VS outbreak metrics ##
 
+# Percent area #
+p.PACC10 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC10_3km), ylab = "Percent canopy gap")
+p.PACC40 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC40_3km), ylab = "Percent open forest")
+p.mnPtchAr_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Gap3km), ylab = "Mean gap area")
+p.mnPtchAr_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Opn3km), ylab = "Mean open forest")
+p.mnPerArRatio_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Gap3km), ylab = "Mean gap PA ratio")
+p.mnPerArRatio_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Opn3km), ylab = "Mean open PA ratio")
+p.NNdist_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Gap3km), ylab = "Mean gap NN dist")
+p.NNdist_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Opn3km), ylab = "Mean open NN dist")
 
-save_plot("figure_trt_vs_hab_grid.tiff", p.point, ncol = 2, nrow = 3.5, dpi = 300)
+p.grid <- ggdraw() + 
+  draw_plot(p.PACC10, x = 0, y = 0.75, width = 0.5, height = 0.25) +
+  draw_plot(p.PACC40, x = .5, y = 0.75, width = 0.5, height = 0.25) +
+  draw_plot(p.mnPtchAr_Gap, x = 0, y = 0.5, width = 0.5, height = 0.25) +
+  draw_plot(p.mnPtchAr_Opn, x = .5, y = 0.5, width = 0.5, height = 0.25) +
+  draw_plot(p.mnPerArRatio_Gap, x = 0, y = 0.25, width = 0.5, height = 0.25) +
+  draw_plot(p.mnPerArRatio_Opn, x = 0.5, y = 0.25, width = 0.5, height = 0.25) +
+  draw_plot(p.NNdist_Gap, x = 0, y = 0, width = 0.5, height = 0.25) +
+  draw_plot(p.NNdist_Opn, x = 0.5, y = 0, width = 0.5, height = 0.25)
+p.grid <- ggdraw() +
+  draw_plot(p.grid, x = 0, y = 0.05, width = 1, height = 0.95) +
+  draw_plot_label("Percent landscape (1-km radius) treated", x = 0, y = 0.05)
 
+save_plot("figure_trt_vs_hab_grid.tiff", p.grid, ncol = 2, nrow = 3.5, dpi = 300)
+
+## Correlations among habitat variables ##
+cor(dat.grid[vars], use = "complete") %>%
+  round(digits = 3) %>%
+  write.csv("Correlations_grid.csv", row.names = T)

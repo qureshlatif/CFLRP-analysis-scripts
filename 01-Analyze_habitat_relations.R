@@ -8,7 +8,7 @@ load("Data_compiled.RData")
 
 #### Script inputs ####
 model.file <- "CFLRP-analysis-scripts/model_habitat_d0yr.jags"
-RESQ.model <- "mod_RESQ_treatment_reduced"
+#RESQ.model <- "mod_RESQ_treatment_reduced"
 
 # MCMC values
 nc <- 3 # number of chains
@@ -40,7 +40,7 @@ data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_ye
              "mnPerArRatio_Opn3km.d",
              "NNdist_Opn3km.d", "NNdist_Opn3km.d.missing", "NNdist_Opn3km.d.min", "NNdist_Opn3km.d.max",
              "TWIP.d","heatload.d","TWI.d","Rdens.d",
-             "RESQ.b", "RESQ.wts", "RESQ.bm",
+             #"RESQ.b", "RESQ.wts", "RESQ.bm",
              "DOY.b", "Time.b")
 
 # Stuff to save from JAGS
@@ -314,14 +314,14 @@ Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level valu
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 library(R.utils)
-mod <- loadObject(RESQ.model)
-RESQ.b <- mod$sims.list$N
-rm(mod) #N, cl.size.samps
-# z-score
-RESQ.b <- RESQ.b %>%
-  (function(x) (x - mean(x)) / sd(x))
-RESQ.wts <- rep(1, dim(RESQ.b)[1])
-RESQ.bm <- apply(RESQ.b, 2, median)
+# mod <- loadObject(RESQ.model)
+# RESQ.b <- mod$sims.list$N
+# rm(mod) #N, cl.size.samps
+# # z-score
+# RESQ.b <- RESQ.b %>%
+#   (function(x) (x - mean(x)) / sd(x))
+# RESQ.wts <- rep(1, dim(RESQ.b)[1])
+# RESQ.bm <- apply(RESQ.b, 2, median)
 
 DOY.b <- Cov[, "DayOfYear"] %>% (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) # Point-level values
 
