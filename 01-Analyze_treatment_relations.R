@@ -7,20 +7,20 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #_____ Script inputs _____#
-model.file <- "CFLRP-analysis-scripts/model_treatment_d0yr.jags"
+model.file <- "model_treatment_d0yr.jags"
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 1 #1000 # burn in
-ni <- 10 #35000 # number of iterations
-nt <- 1 #10 # thinning
+nb <- 1000 # burn in
+ni <- 35000 # number of iterations
+nt <- 10 # thinning
 
 save.out <- "mod_treatment_d0yr"
 #_________________________#
 
 # Data objects to send to JAGS
 data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_year", "n.spp",
-             "Trt.b","PctTrt.d", "YST.b", "TWIP.d","TWI.d","heatload.d", "Rdens.d", #"YST.d", 
+             "Trt.b","PctTrt.d", "YST.b", "TWIP.d","TWI.d", "heatload.d", "ForAR.d", "Rdens.d", #"YST.d", 
              "DOY.b", "Time.b")
 
 # Stuff to save from JAGS
@@ -43,7 +43,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "bd.yr", # For year effect
                 "bd.pers", # For persistence effect
                 "bd.ptrt", "bd.ptrt2", "bd.YST",
-                "bd.TWIP", "bd.TWI", "bd.heatload", "bd.Rdens",
+                "bd.TWIP", "bd.TWI", "bd.heatload", "bd.ForAR", "bd.Rdens",
                 "bb.trt", "bb.YST", "ba.Time", "ba.Time2",
                 "ba.DOY", "ba.trt", "ba.YST", "ba.DOY2",
                 
@@ -57,7 +57,7 @@ inits <- function()
        tvar.Betad.PctTrt2 = rnorm(1),
        tvar.Betad.YST = rnorm(1),
        tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1),
-       tvar.Betad.TWI = rnorm(1), tvar.Betad.heatload = rnorm(1),
+       tvar.Betad.TWI = rnorm(1), tvar.Betad.heatload = rnorm(1), tvar.Betad.ForAR = rnorm(1),
        tvar.Betab.Trt = rnorm(1), tvar.Betab.YST = rnorm(1),
        tvar.Betaa.Time = rnorm(1), tvar.Betaa.Time2 = rnorm(1),
        tvar.Betaa.DOY = rnorm(1), tvar.Betaa.DOY2 = rnorm(1),
@@ -107,6 +107,9 @@ heatload.d <- tapply(Cov[, "heatload"], gridID, mean, na.rm = T) %>% # Grid-leve
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 TWI.d <- tapply(Cov[, "TWI"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+ForAR.d <- tapply(Cov[, "ForAR"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level values

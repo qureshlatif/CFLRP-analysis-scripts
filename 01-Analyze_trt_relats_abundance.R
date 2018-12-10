@@ -8,7 +8,7 @@ load("Data_compiled_abundance.RData")
 
 #___ Script inputs ___#
 model.file <- "CFLRP-analysis-scripts/model_abundance_treatment_global.jags"
-spp <- "RESQ"
+spp <- "CHSP"
 spp.ind <- which(Spp == spp)
 #detection.model <- "HZ" # Set to "HZ" for hazard rate of "HN" for half-normal
 

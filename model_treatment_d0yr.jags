@@ -44,6 +44,10 @@ model {
   tvar.Betad.TWI ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.TWI <- abs(tvar.Betad.TWI) # half-Cauchy distribution
   
+  Betad.ForAR ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.ForAR ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.ForAR <- abs(tvar.Betad.ForAR) # half-Cauchy distribution
+
   # covariates for theta (b)
   Betab.Trt ~ dt(0, pow(t.sigma, -2), t.nu)
   tvar.Betab.Trt ~ dt(0,1,1)  # Cauchy distribution
@@ -87,6 +91,7 @@ model {
     bd.ptrt[i] ~ dnorm(Betad.PctTrt, pow(sigma.Betad.PctTrt, -2))
     bd.TWI[i] ~ dnorm(Betad.TWI, pow(sigma.Betad.TWI, -2))
     bd.heatload[i] ~ dnorm(Betad.heatload, pow(sigma.Betad.heatload, -2))
+    bd.ForAR[i] ~ dnorm(Betad.ForAR, pow(sigma.Betad.ForAR, -2))
 
     # covariates for theta (b)
     bb.trt[i] ~ dnorm(Betab.Trt, pow(sigma.Betab.Trt, -2))
@@ -104,7 +109,7 @@ model {
     for(k in 1:n.grid) {
       for(t in 1:n.year) {
         logit(psi[k, i, t]) <- d0[i, t] + bd.ptrt[i]*PctTrt.d[k, t] +
-          bd.TWI[i]*TWI.d[k] + bd.heatload[i]*heatload.d[k]
+          bd.TWI[i]*TWI.d[k] + bd.heatload[i]*heatload.d[k] + bd.ForAR[i]*ForAR.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }

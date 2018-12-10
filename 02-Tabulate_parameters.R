@@ -7,12 +7,12 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 #__________ Script inputs _____________#
-mod <- loadObject("mod_habitat_d0yr_reduced")
+mod <- loadObject("mod_treatment_d0yr_wForAR")
 params <- c("d0.1", "d0.2", "d0.3", "b0", "a0", "bd.ptrt", "bd.ptrt2", "bd.YST",
             "bd.PACC10_3km", "bd.mnPtchAr_Gap3km", "bd.mnPerArRatio_Gap3km",
             "bd.NNdist_Gap3km", "bd.PACC40_3km", "bd.mnPtchAr_Opn3km",
             "bd.mnPerArRatio_Opn3km", "bd.NNdist_Opn3km",
-            "bd.TWIP", "bd.TWI", "bd.heatload", "bd.Rdens",
+            "bd.TWIP", "bd.TWI", "bd.heatload", "bd.Rdens", "bd.ForAR",
             "bb.trt", "bb.YST",
             "bb.CanCov", "bb.CanCov2", "bb.CanHt", "bb.NumSnags", "bb.RCOV_PP",
             "bb.RCOV_DF", "bb.RCOV_AS", "bb.shvol", "bb.RSCV_Ladder", "bb.RSCV_Ber",

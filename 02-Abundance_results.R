@@ -10,8 +10,8 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP/")
 load("Data_compiled_abundance.RData")
 
 #___ Inputs ___#
-spp <- "PYNU"
-mod <- loadObject("abund_models/mod_PYNU_abundance_treatment_global")
+spp <- "YRWA"
+mod <- loadObject("abund_models/mod_YRWA_abundance_treatment_global")
 pars <- c("beta0.mean", "beta0.sd", "bd.PctTrt", "bd.heatload", # Parameters of interest
           "bd.TWI", "bl.trt", "bl.YST", "bd.RDens",
           "a0", "a.Time", "a.Time2", "a.DOY",
