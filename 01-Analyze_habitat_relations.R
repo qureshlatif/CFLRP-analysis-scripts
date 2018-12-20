@@ -39,7 +39,7 @@ data <- list("Y", "TPeriod", "gridID", "yearID", "n.grid", "n.year", "n.point_ye
              "PACC40_3km.d", "mnPtchAr_Opn3km.d",
              "mnPerArRatio_Opn3km.d",
              "NNdist_Opn3km.d", "NNdist_Opn3km.d.missing", "NNdist_Opn3km.d.min", "NNdist_Opn3km.d.max",
-             "TWIP.d","heatload.d","TWI.d","Rdens.d",
+             "TWIP.d","heatload.d","TWI.d","Rdens.d", "ForAR.d",
              #"RESQ.b", "RESQ.wts", "RESQ.bm",
              "DOY.b", "Time.b")
 
@@ -60,6 +60,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "Betad.NNdist_Opn3km", "sigma.Betad.NNdist_Opn3km",
                 "Betad.TWIP", "sigma.Betad.TWIP","Betad.TWI", "sigma.Betad.TWI",
                 "Betad.heatload", "sigma.Betad.heatload","Betad.Rdens", "sigma.Betad.Rdens",
+                "Betad.ForAR", "sigma.Betad.ForAR",
                 
                 "Betab.CanCov", "sigma.Betab.CanCov",
                 "Betab.CanCov2", "sigma.Betab.CanCov2",
@@ -84,7 +85,7 @@ parameters <- c("omega", "rho.ab", "rho.bd",
                 "bd.pers", # For persistence effect
                 "bd.PACC10_3km", "bd.PACC10_3km2", "bd.mnPtchAr_Gap3km", "bd.mnPerArRatio_Gap3km", "bd.NNdist_Gap3km",
                 "bd.PACC40_3km", "bd.PACC40_3km2", "bd.mnPtchAr_Opn3km", "bd.mnPerArRatio_Opn3km", "bd.NNdist_Opn3km",
-                "bd.TWIP", "bd.heatload", "bd.TWI", "bd.Rdens",
+                "bd.TWIP", "bd.heatload", "bd.TWI", "bd.Rdens", "bd.ForAR",
                 "bb.CanCov", "bb.CanCov2", "bb.CanHt", "bb.NumSnags", "bb.RCOV_PP", "bb.RCOV_DF",
                 "bb.RCOV_AS", "bb.shvol", "bb.RSCV_Ladder", "bb.RSCV_Ber", "bb.HerbGrassVol", "bb.SOHtRatio",
                 "bb.RESQ", "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol",
@@ -99,7 +100,7 @@ inits <- function()
        tvar.Betad.mnPerArRatio_Gap3km = rnorm(1), tvar.Betad.NNdist_Gap3km = rnorm(1),
        tvar.Betad.PACC40_3km = rnorm(1), tvar.Betad.PACC40_3km2 = rnorm(1), tvar.Betad.mnPtchAr_Opn3km = rnorm(1),
        tvar.Betad.mnPerArRatio_Opn3km = rnorm(1), tvar.Betad.NNdist_Opn3km = rnorm(1),
-       tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1),
+       tvar.Betad.TWIP = rnorm(1), tvar.Betad.Rdens = rnorm(1), tvar.Betad.ForAR = rnorm(1),
        tvar.Betad.TWI = rnorm(1), tvar.Betad.heatload = rnorm(1), 
        tvar.Betab.CanCov = rnorm(1), tvar.Betab.CanCov2 = rnorm(1), tvar.Betab.CanHt = rnorm(1),
        tvar.Betab.NumSnags = rnorm(1), tvar.Betab.RCOV_PP = rnorm(1),
@@ -308,6 +309,9 @@ heatload.d <- tapply(Cov[, "heatload"], gridID, mean, na.rm = T) %>% # Grid-leve
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 TWI.d <- tapply(Cov[, "TWI"], gridID, mean, na.rm = T) %>% # Grid-level values
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+ForAR.d <- tapply(Cov[, "ForAR"], gridID, mean, na.rm = T) %>% # Grid-level values
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 Rdens.d <- tapply(Cov[, "Rdens"], gridID, mean, na.rm = T) %>% # Grid-level values

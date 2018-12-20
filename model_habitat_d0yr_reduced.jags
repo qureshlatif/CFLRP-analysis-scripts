@@ -52,9 +52,9 @@ model {
   tvar.Betad.heatload ~ dt(0,1,1)  # Cauchy distribution
   sigma.Betad.heatload <- abs(tvar.Betad.heatload) # half-Cauchy distribution
   
-  #Betad.Rdens ~ dt(0, pow(t.sigma, -2), t.nu)
-  #tvar.Betad.Rdens ~ dt(0,1,1)  # Cauchy distribution
-  #sigma.Betad.Rdens <- abs(tvar.Betad.Rdens) # half-Cauchy distribution
+  Betad.ForAR ~ dt(0, pow(t.sigma, -2), t.nu)
+  tvar.Betad.ForAR ~ dt(0,1,1)  # Cauchy distribution
+  sigma.Betad.ForAR <- abs(tvar.Betad.ForAR) # half-Cauchy distribution
 
   # covariates for theta (b)
   Betab.CanCov ~ dt(0, pow(t.sigma, -2), t.nu)
@@ -151,7 +151,7 @@ model {
     bd.mnPerArRatio_Opn3km[i] ~ dnorm(Betad.mnPerArRatio_Opn3km, pow(sigma.Betad.mnPerArRatio_Opn3km, -2))
     bd.TWI[i] ~ dnorm(Betad.TWI, pow(sigma.Betad.TWI, -2))
     bd.heatload[i] ~ dnorm(Betad.heatload, pow(sigma.Betad.heatload, -2))
-    #bd.Rdens[i] ~ dnorm(Betad.Rdens, pow(sigma.Betad.Rdens, -2))
+    bd.ForAR[i] ~ dnorm(Betad.ForAR, pow(sigma.Betad.ForAR, -2))
 
     # covariates for theta (b)
     bb.CanCov[i] ~ dnorm(Betab.CanCov, pow(sigma.Betab.CanCov, -2))
@@ -160,7 +160,7 @@ model {
     bb.RCOV_PP[i] ~ dnorm(Betab.RCOV_PP, pow(sigma.Betab.RCOV_PP, -2))
     bb.RCOV_DF[i] ~ dnorm(Betab.RCOV_DF, pow(sigma.Betab.RCOV_DF, -2))
     bb.RCOV_AS[i] ~ dnorm(Betab.RCOV_AS, pow(sigma.Betab.RCOV_AS, -2))
-    bb.ShrubVol[i] ~ dnorm(Betab.ShrubVol, pow(sigma.Betab.ShrubVol, -2))
+    bb.shvol[i] ~ dnorm(Betab.ShrubVol, pow(sigma.Betab.ShrubVol, -2))
     bb.RSCV_Ladder[i] ~ dnorm(Betab.RSCV_Ladder, pow(sigma.Betab.RSCV_Ladder, -2))
     bb.HerbGrassVol[i] ~ dnorm(Betab.HerbGrassVol, pow(sigma.Betab.HerbGrassVol, -2))
 
@@ -177,7 +177,7 @@ model {
       for(t in 1:n.year) {
         logit(psi[k, i, t]) <- d0[i, t] + bd.PACC10_3km[i]*PACC10_3km.d[k, t] + bd.PACC40_3km[i]*PACC40_3km.d[k, t] +
           bd.mnPerArRatio_Opn3km[i]*mnPerArRatio_Opn3km.d[k, t] + bd.TWI[i]*TWI.d[k] +
-          bd.heatload[i]*heatload.d[k] #+ bd.Rdens[i]*Rdens.d[k]
+          bd.heatload[i]*heatload.d[k] + bd.ForAR[i]*ForAR.d[k]
         z[k, i, t] ~ dbern(psi[k, i, t]*w[i])
       }
     }
@@ -185,7 +185,7 @@ model {
     for(j in 1:n.point_year) {
       logit(theta[j, i]) <- b0[i] + bb.CanCov[i]*ccov[j] + bb.CanHt[i]*CanHt[j] +
         bb.NumSnags[i]*NumSnags[j] + bb.RCOV_PP[i]*RCOV_PP[j] + bb.RCOV_DF[i]*RCOV_DF[j] +
-        bb.RCOV_AS[i]*RCOV_AS[j] + bb.ShrubVol[i]*shvol[j] + bb.RSCV_Ladder[i]*RSCV_Ladder[j] +
+        bb.RCOV_AS[i]*RCOV_AS[j] + bb.shvol[i]*shvol[j] + bb.RSCV_Ladder[i]*RSCV_Ladder[j] +
         bb.HerbGrassVol[i]*HerbGrassVol[j]
       u[j, i] ~ dbern(theta[j, i]*z[gridID[j], i, yearID[j]])
       
