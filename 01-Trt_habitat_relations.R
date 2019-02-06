@@ -26,7 +26,7 @@ p.stat.fn <- function(dat, ylab) {
                   inherit.aes = F, width = 0.3, size = 1, color = "blue") +
     geom_point(data = dt.sum, aes(x = Trt_stat, y = mn), size = 3, fill = "blue", color = "blue") +
     scale_x_continuous(breaks = c(0, 1), labels = c("Untreated", "Treated")) +
-    xlab(NULL) + ylab(ylab)
+    xlab("Treatment status (Trt)") + ylab(ylab)
   return(p)
 }
 
@@ -35,7 +35,7 @@ p.time.fn <- function(dat, ylab) {
     geom_jitter(alpha = 0.1) +
     geom_smooth() +
     scale_x_continuous(breaks = 1:10) +
-    xlab("Years since trt") + ylab(ylab)
+    xlab("Years since treatment (YST)") + ylab(ylab)
   return(p)
 }
 
@@ -105,87 +105,87 @@ cor((dat.point %>% filter(Trt_stat == 1))[, c(6:8, 10:12, 15:19, 21, 22)], use =
 ## Plot vegetation (mehanistic factors) VS outbreak metrics ##
 
 # Canopy cover #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = CanCov), ylab = "Canopy cover")
-p.time <- p.time.fn(dat.point %>% rename(Y = CanCov) %>% filter(Trt_stat == 1), ylab = "Canopy cover")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = CanCov), ylab = "CanCov")
+p.time <- p.time.fn(dat.point %>% rename(Y = CanCov) %>% filter(Trt_stat == 1), ylab = "CanCov")
 p.CanCov <- p.stitch.fn(p.stat, p.time)
 
 # Canopy height #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = CanHt), ylab = "Canopy height")
-p.time <- p.time.fn(dat.point %>% rename(Y = CanHt) %>% filter(Trt_stat == 1), ylab = "Canopy height")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = CanHt), ylab = "CanHt")
+p.time <- p.time.fn(dat.point %>% rename(Y = CanHt) %>% filter(Trt_stat == 1), ylab = "CanHt")
 p.CanHt <- p.stitch.fn(p.stat, p.time)
 
 # Number of snags #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = NumSnags), ylab = "Number of snags")
-p.time <- p.time.fn(dat.point %>% rename(Y = NumSnags) %>% filter(Trt_stat == 1), ylab = "Number of snags")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = NumSnags), ylab = "NSnag")
+p.time <- p.time.fn(dat.point %>% rename(Y = NumSnags) %>% filter(Trt_stat == 1), ylab = "NSnag")
 p.NumSnags <- p.stitch.fn(p.stat, p.time)
 
 # Ponderosa pine dominance #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_PP), ylab = "Ponderosa pine RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_PP), ylab = "Ponderosa pine RC")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_PP), ylab = "PIPO")
+p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_PP), ylab = "PIPO")
 p.RCOV_PP <- p.stitch.fn(p.stat, p.time)
 
 # Douglas fir dominance #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_DF), ylab = "Douglas fir RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_DF), ylab = "Douglas fir RC")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_DF), ylab = "PSME")
+p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_DF), ylab = "PSME")
 p.RCOV_DF <- p.stitch.fn(p.stat, p.time)
 
 # Aspen dominance #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_AS), ylab = "Aspen RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_AS), ylab = "Aspen RC")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = RCOV_AS), ylab = "POTR5")
+p.time <- p.time.fn(dat.point %>% rename(Y = RCOV_AS), ylab = "POTR5")
 p.RCOV_AS <- p.stitch.fn(p.stat, p.time)
 
 # Shrub volume #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = ShrubVol), ylab = "Shrub volume")
-p.time <- p.time.fn(dat.point %>% rename(Y = ShrubVol), ylab = "Shrub volume")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = ShrubVol), ylab = "ShrbVol")
+p.time <- p.time.fn(dat.point %>% rename(Y = ShrubVol), ylab = "ShrbVol")
 p.ShrubVol <- p.stitch.fn(p.stat, p.time)
 
-# Shrub diversity #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = ShrubDiv), ylab = "Shrub diversity")
-p.time <- p.time.fn(dat.point %>% rename(Y = ShrubDiv), ylab = "Shrub diversity")
-p.ShrubDiv <- p.stitch.fn(p.stat, p.time)
+# # Shrub diversity #
+# p.stat <- p.stat.fn(dat.point %>% rename(Y = ShrubDiv), ylab = "Shrub diversity")
+# p.time <- p.time.fn(dat.point %>% rename(Y = ShrubDiv), ylab = "Shrub diversity")
+# p.ShrubDiv <- p.stitch.fn(p.stat, p.time)
 
 # Ladder fuel shrubs #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_Ladder), ylab = "Ladder fuel shrub RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_Ladder), ylab = "Ladder fuel shrub RC")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_Ladder), ylab = "LadFuel")
+p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_Ladder), ylab = "LadFuel")
 p.RSCV_Ladder <- p.stitch.fn(p.stat, p.time)
 
-# Berry shrubs #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_Ber), ylab = "Berry shrub RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_Ber), ylab = "Berry shrub RC")
-p.RSCV_Ber <- p.stitch.fn(p.stat, p.time)
-
-# Aspen shrubs #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_AS), ylab = "Aspen shrub RC")
-p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_AS), ylab = "Aspen shrub RC")
-p.RSCV_AS <- p.stitch.fn(p.stat, p.time)
+# # Berry shrubs #
+# p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_Ber), ylab = "Berry shrub RC")
+# p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_Ber), ylab = "Berry shrub RC")
+# p.RSCV_Ber <- p.stitch.fn(p.stat, p.time)
+# 
+# # Aspen shrubs #
+# p.stat <- p.stat.fn(dat.point %>% rename(Y = RSCV_AS), ylab = "Aspen shrub RC")
+# p.time <- p.time.fn(dat.point %>% rename(Y = RSCV_AS), ylab = "Aspen shrub RC")
+# p.RSCV_AS <- p.stitch.fn(p.stat, p.time)
 
 # Herb-grass volume #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = HerbGrassVol), ylab = "Herbaceous volume")
-p.time <- p.time.fn(dat.point %>% rename(Y = HerbGrassVol), ylab = "Herbaceous volume")
+p.stat <- p.stat.fn(dat.point %>% rename(Y = HerbGrassVol), ylab = "Herb")
+p.time <- p.time.fn(dat.point %>% rename(Y = HerbGrassVol), ylab = "Herb")
 p.HerbGrassVol <- p.stitch.fn(p.stat, p.time)
 
-# Shrub-overstory height ratio #
-p.stat <- p.stat.fn(dat.point %>% rename(Y = SOHtRatio), ylab = "Shrub-overstory Ratio")
-p.time <- p.time.fn(dat.point %>% rename(Y = SOHtRatio), ylab = "Shrub-overstory Ratio")
-p.SOHtRatio <- p.stitch.fn(p.stat, p.time)
+# # Shrub-overstory height ratio #
+# p.stat <- p.stat.fn(dat.point %>% rename(Y = SOHtRatio), ylab = "Shrub-overstory Ratio")
+# p.time <- p.time.fn(dat.point %>% rename(Y = SOHtRatio), ylab = "Shrub-overstory Ratio")
+# p.SOHtRatio <- p.stitch.fn(p.stat, p.time)
 
 p.point <- ggdraw() + 
-  draw_plot(p.CanCov, x = 0, y = 0.8571429, width = 0.5, height = 0.1428571) +
-  draw_plot(p.CanHt, x = .5, y = 0.8571429, width = 0.5, height = 0.1428571) +
-  draw_plot(p.NumSnags, x = 0, y = 0.7142857, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RCOV_PP, x = .5, y = 0.7142857, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RCOV_DF, x = 0, y = 0.5714286, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RCOV_AS, x = 0.5, y = 0.5714286, width = 0.5, height = 0.1428571) +
-  draw_plot(p.ShrubVol, x = 0, y = 0.4285714, width = 0.5, height = 0.1428571) +
-  draw_plot(p.ShrubDiv, x = 0.5, y = 0.4285714, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RSCV_Ladder, x = 0, y = 0.2857143, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RSCV_Ber, x = 0.5, y = 0.2857143, width = 0.5, height = 0.1428571) +
-  draw_plot(p.RSCV_AS, x = 0, y = 0.1428571, width = 0.5, height = 0.1428571) +
-  draw_plot(p.HerbGrassVol, x = 0, y = 0, width = 0.5, height = 0.1428571) +
-  draw_plot(p.SOHtRatio, x = 0.5, y = 0, width = 0.5, height = 0.1428571)
+  draw_plot(p.CanCov, x = 0, y = 0.6666667, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.CanHt, x = 0.3333333, y = 0.6666667, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.NumSnags, x = 0.6666667, y = 0.6666667, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.RCOV_PP, x = 0, y = 0.3333333, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.RCOV_DF, x = 0.3333333, y = 0.3333333, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.RCOV_AS, x = 0.6666667, y = 0.3333333, width = 0.3333333, height = 0.3333333) +
+  draw_plot(p.ShrubVol, x = 0, y = 0, width = 0.3333333, height = 0.3333333) +
+  #draw_plot(p.ShrubDiv, x = 0.5, y = 0.4285714, width = 0.5, height = 0.1428571) +
+  draw_plot(p.RSCV_Ladder, x = 0.3333333, y = 0, width = 0.3333333, height = 0.3333333) +
+  #draw_plot(p.RSCV_Ber, x = 0.5, y = 0.2857143, width = 0.5, height = 0.1428571) +
+  #draw_plot(p.RSCV_AS, x = 0, y = 0.1428571, width = 0.5, height = 0.1428571) +
+  draw_plot(p.HerbGrassVol, x = 0.6666667, y = 0, width = 0.3333333, height = 0.3333333)
+  #draw_plot(p.SOHtRatio, x = 0.5, y = 0, width = 0.5, height = 0.1428571)
 
 
-save_plot("figure_trt_vs_hab_point.tiff", p.point, ncol = 2, nrow = 3.5, dpi = 300)
+save_plot("figure_trt_vs_hab_point.tiff", p.point, ncol = 5, nrow = 3, dpi = 300)
 
 #### Grid-level relations ####
 ## Tabulate correlation coefficients ##
@@ -214,29 +214,29 @@ out %>% write.csv("Trt_hab_correlations_grid.csv", row.names = T)
 ## Plot vegetation (mehanistic factors) VS outbreak metrics ##
 
 # Percent area #
-p.PACC10 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC10_3km), ylab = "Percent canopy gap")
-p.PACC40 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC40_3km), ylab = "Percent open forest")
-p.mnPtchAr_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Gap3km), ylab = "Mean gap area")
-p.mnPtchAr_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Opn3km), ylab = "Mean open forest")
-p.mnPerArRatio_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Gap3km), ylab = "Mean gap PA ratio")
-p.mnPerArRatio_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Opn3km), ylab = "Mean open PA ratio")
-p.NNdist_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Gap3km), ylab = "Mean gap NN dist")
-p.NNdist_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Opn3km), ylab = "Mean open NN dist")
+p.PACC10 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC10_3km), ylab = "PACCGap")
+p.PACC40 <- p.ptrt.fn(dat.grid %>% rename(Y = PACC40_3km), ylab = "PACCOpn")
+#p.mnPtchAr_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Gap3km), ylab = "Mean gap area")
+#p.mnPtchAr_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPtchAr_Opn3km), ylab = "Mean open forest")
+#p.mnPerArRatio_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Gap3km), ylab = "Mean gap PA ratio")
+p.mnPerArRatio_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = mnPerArRatio_Opn3km), ylab = "PAROpn")
+#p.NNdist_Gap <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Gap3km), ylab = "Mean gap NN dist")
+#p.NNdist_Opn <- p.ptrt.fn(dat.grid %>% rename(Y = NNdist_Opn3km), ylab = "Mean open NN dist")
 
 p.grid <- ggdraw() + 
-  draw_plot(p.PACC10, x = 0, y = 0.75, width = 0.5, height = 0.25) +
-  draw_plot(p.PACC40, x = .5, y = 0.75, width = 0.5, height = 0.25) +
-  draw_plot(p.mnPtchAr_Gap, x = 0, y = 0.5, width = 0.5, height = 0.25) +
-  draw_plot(p.mnPtchAr_Opn, x = .5, y = 0.5, width = 0.5, height = 0.25) +
-  draw_plot(p.mnPerArRatio_Gap, x = 0, y = 0.25, width = 0.5, height = 0.25) +
-  draw_plot(p.mnPerArRatio_Opn, x = 0.5, y = 0.25, width = 0.5, height = 0.25) +
-  draw_plot(p.NNdist_Gap, x = 0, y = 0, width = 0.5, height = 0.25) +
-  draw_plot(p.NNdist_Opn, x = 0.5, y = 0, width = 0.5, height = 0.25)
+  draw_plot(p.PACC10, x = 0, y = 0.6667, width = 1, height = 0.3333) +
+  draw_plot(p.PACC40, x = 0, y = 0.3333, width = 1, height = 0.3333) +
+  #draw_plot(p.mnPtchAr_Gap, x = 0, y = 0.5, width = 0.5, height = 0.25) +
+  #draw_plot(p.mnPtchAr_Opn, x = .5, y = 0.5, width = 0.5, height = 0.25) +
+  #draw_plot(p.mnPerArRatio_Gap, x = 0, y = 0.25, width = 0.5, height = 0.25) +
+  draw_plot(p.mnPerArRatio_Opn, x = 0, y = 0, width = 1, height = 0.3333)
+  #draw_plot(p.NNdist_Gap, x = 0, y = 0, width = 0.5, height = 0.25) +
+  #draw_plot(p.NNdist_Opn, x = 0.5, y = 0, width = 0.5, height = 0.25)
 p.grid <- ggdraw() +
   draw_plot(p.grid, x = 0, y = 0.05, width = 1, height = 0.95) +
-  draw_plot_label("Percent landscape (1-km radius) treated", x = 0, y = 0.05)
+  draw_plot_label("Percent treated (percTrt)", x = 0.33, y = 0.05, hjust = 0)
 
-save_plot("figure_trt_vs_hab_grid.tiff", p.grid, ncol = 2, nrow = 3.5, dpi = 300)
+save_plot("figure_trt_vs_hab_grid.tiff", p.grid, ncol = 1.5, nrow = 3, dpi = 300)
 
 ## Correlations among habitat variables ##
 cor(dat.grid[vars], use = "complete") %>%

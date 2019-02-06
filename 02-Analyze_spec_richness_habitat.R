@@ -108,11 +108,11 @@ B.PACC40 <- str_c(median(B.PACC40) %>% round(digits = 2),
                  ",",
                  quantile(B.PACC40, prob = 0.975, type = 8) %>% round(digits = 2),
                  ")")
-B.mnPAR <- str_c(median(B.mnPAR) %>% round(digits = 2),
+B.mnPAR <- str_c(median(B.mnPAR) %>% round(digits = 3),
                   " (",
-                  quantile(B.mnPAR, prob = 0.025, type = 8) %>% round(digits = 2),
+                  quantile(B.mnPAR, prob = 0.025, type = 8) %>% round(digits = 3),
                   ",",
-                  quantile(B.mnPAR, prob = 0.975, type = 8) %>% round(digits = 2),
+                  quantile(B.mnPAR, prob = 0.975, type = 8) %>% round(digits = 3),
                   ")")
 
 dat.SR <- data.frame(PACC10 = (PACC10_3km.d %>% apply(1, mean, na.rm = T)),
@@ -124,38 +124,41 @@ dat.SR <- data.frame(PACC10 = (PACC10_3km.d %>% apply(1, mean, na.rm = T)),
                      Y.hi = SPR %>% apply(c(1, 2), mean) %>%
                        apply(2, function(x) quantile(x,prob=0.975,type=8)) %>% as.numeric)
 
-p.PACCOpn <- ggplot(data = dat.SR, aes(x = PACC10, y = Y)) + 
+p.PACCGap <- ggplot(data = dat.SR, aes(x = PACC10, y = Y)) + 
   geom_point(alpha = 0.3) +
   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
   geom_ribbon(data = dat.pred.PACC10, aes(x = PACC10.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
   geom_line(data = dat.pred.PACC10, aes(x = PACC10.x, y = Y.md), colour = "blue", size = 1.5) + 
   labs(x = "Extent of canopy gaps (PACCGap)", y = NULL)
 
-p.PACCGap <- ggplot(data = dat.SR, aes(x = PACC40, y = Y)) + 
+p.PACCOpn <- ggplot(data = dat.SR, aes(x = PACC40, y = Y)) + 
   geom_point(alpha = 0.3) +
   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
   geom_ribbon(data = dat.pred.PACC40, aes(x = PACC40.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
   geom_line(data = dat.pred.PACC40, aes(x = PACC40.x, y = Y.md), colour = "blue", size = 1.5) + 
   labs(x = "Extent of open forest (PACCOpn)", y = NULL)
 
-p.PAROpn <- ggplot(data = dat.SR, aes(x = mnPAR, y = Y)) + 
-  geom_point(alpha = 0.3) +
-  geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
-  geom_ribbon(data = dat.pred.mnPAR, aes(x = mnPAR.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
-  geom_line(data = dat.pred.mnPAR, aes(x = mnPAR.x, y = Y.md), colour = "blue", size = 1.5) + 
-  labs(x = "Open forest perimeter-area ratio (PAROpn)", y = NULL)
+# p.PAROpn <- ggplot(data = dat.SR, aes(x = mnPAR, y = Y)) + 
+#   geom_point(alpha = 0.3) +
+#   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
+#   geom_ribbon(data = dat.pred.mnPAR, aes(x = mnPAR.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
+#   geom_line(data = dat.pred.mnPAR, aes(x = mnPAR.x, y = Y.md), colour = "blue", size = 1.5) + 
+#   labs(x = "Open forest perimeter-area ratio (PAROpn)", y = NULL)
 
 p <- ggdraw() + 
-  draw_plot(p.PACCGap, x = 0.03, y = 0, width = 0.3233333, height = 1) +
-  draw_plot(p.PACCOpn, x = 0.3533333, y = 0, width = 0.3233333, height = 1) +
-  draw_plot(p.PAROpn, x = 0.6766667, y = 0, width = 0.3233333, height = 1) +
-  draw_plot_label("N[psi,k]", x = 0, y = 0.5, size = 20, angle = 90, hjust = 0, parse = T) #****Need to figure out how to get k in there.
+  draw_plot(p.PACCGap, x = 0.05, y = 0, width = 0.485, height = 1) +
+  draw_plot(p.PACCOpn, x = 0.525, y = 0, width = 0.485, height = 1) +
+  # draw_plot(p.PAROpn, x = 0.6766667, y = 0, width = 0.3233333, height = 1) +
+  draw_plot_label(c("N[psi]", "',k'"), x = c(0, 0.027),
+                  y = c(0.5, 0.58), size = c(20, 12),
+                  angle = c(90, 90), hjust = c(0, 0), parse = T) #****Need to figure out how to get k in there.
 
-save_plot("Plot_richness_landscape.tiff", p, ncol = 3, nrow = 1, dpi = 200)
+save_plot("Plot_richness_landscape.tiff", p, ncol = 2, nrow = 1, dpi = 200)
 
 ## Point level ##
 
 SPR <- mod$sims.list$SR.point
+digts <- 5 # Set number of digits to save for tabulation summaries
 
 # Canopy cover #
 CanCov.b <- Cov[, "CanCov"]
@@ -190,7 +193,8 @@ dat.x <- data.frame(ID = ID,
                       (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
 
 
-# var.names <- c("CanCov", "CanHt", "NSnag", "PIPO", "PSME", "POTR5", "ShrbVol", "LadFuel", "Herb")
+# #__Run this chunk once and then load from cache__#
+var.names <- c("CanCov", "CanHt", "NSnag", "PIPO", "PSME", "POTR5", "ShrbVol", "LadFuel", "Herb")
 # 
 # dat.pred.CanCov <- data.frame(CanCov.x = seq(min(CanCov.b, na.rm = T), max(CanCov.b, na.rm = T), length.out = 20)) %>%
 #   mutate(CanCov.z = (CanCov.x - mean(CanCov.b, na.rm = T)) / sd(CanCov.b, na.rm = T),
@@ -246,17 +250,12 @@ dat.x <- data.frame(ID = ID,
 # 
 # for(v in var.names) {
 #   Y <- eval(as.name(str_c("Y.", v)))
-#   B <- eval(as.name(str_c("B.", v)))
 #   dat.pred <- eval(as.name(str_c("dat.pred.", v)))
 #   dat.pred <- dat.pred %>%
 #     mutate(Y.md = apply(Y, 2, median),
 #            Y.lo = apply(Y, 2, function(x) quantile(x, prob = 0.025, type = 8)),
 #            Y.hi = apply(Y, 2, function(x) quantile(x, prob = 0.975, type = 8)))
 #   assign(str_c("dat.pred.", v), dat.pred)
-#   B <- str_c(median(B, na.rm = T) %>% round(digits = 3), " (",
-#              quantile(B, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 3), ",",
-#              quantile(B, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 3), ")")
-#   assign(str_c("B.", v), B)
 # }
 # 
 # for(v in var.names) {
@@ -265,23 +264,32 @@ dat.x <- data.frame(ID = ID,
 #   dat.pred <- eval(as.name(str_c("dat.pred.", v)))
 #   saveObject(dat.pred, str_c("Spp_richness_dat_pred_", v, "_cache"))
 # }
-# B0.point <- str_c(median(B0.point, na.rm = T) %>% round(digits = 2), " (",
-#                   quantile(B0.point, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2), ",",
-#                   quantile(B0.point, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2), ")")
-# B0.pntSD <- str_c(median(B0.pntSD, na.rm = T) %>% round(digits = 2), " (",
-#                   quantile(B0.pntSD, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2), ",",
-#                   quantile(B0.pntSD, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2), ")")
 # saveObject(B0.point, "B0_pnt_N_hab_cache")
 # saveObject(B0.pntSD, "B0_pntSD_N_hab_cache")
+# #________________________________________________#
+# rm(i, m, Y, B, dat.pred)
 
 for(v in var.names) {
-  str_c("B.", v) %>% assign(loadObject(str_c("B", v, "_pnt_N_hab_cache")))
-  str_c("dat.pred.", v) %>% assign(loadObject(str_c("Spp_richness_dat_pred_", v, "_cache")))
+  assign(str_c("B.", v), loadObject(str_c("B", v, "_pnt_N_hab_cache")))
+  assign(str_c("dat.pred.", v), loadObject(str_c("Spp_richness_dat_pred_", v, "_cache")))
 }
 B0.point <- loadObject("B0_pnt_N_hab_cache")
 B0.pntSD <- loadObject("B0_pntSD_N_hab_cache")
 
-rm(i, v, m, Y, B, dat.pred)
+for(v in var.names) {
+  B <- eval(as.name(str_c("B.", v)))
+  B <- str_c(median(B, na.rm = T) %>% round(digits = digts), " (",
+             quantile(B, prob = 0.025, type = 8, na.rm = T) %>% round(digits = digts), ",",
+             quantile(B, prob = 0.975, type = 8, na.rm = T) %>% round(digits = digts), ")")
+  assign(str_c("B.", v), B)
+}
+B0.point <- str_c(median(B0.point, na.rm = T) %>% round(digits = digts), " (",
+                  quantile(B0.point, prob = 0.025, type = 8, na.rm = T) %>% round(digits = digts), ",",
+                  quantile(B0.point, prob = 0.975, type = 8, na.rm = T) %>% round(digits = digts), ")")
+B0.pntSD <- str_c(median(B0.pntSD, na.rm = T) %>% round(digits = digts), " (",
+                  quantile(B0.pntSD, prob = 0.025, type = 8, na.rm = T) %>% round(digits = digts), ",",
+                  quantile(B0.pntSD, prob = 0.975, type = 8, na.rm = T) %>% round(digits = digts), ")")
+rm(v, B)
 
 dat.SR <- data.frame(CanCov = CanCov.b,
                      CanHt = CanHt.b,
@@ -319,19 +327,19 @@ p.NSnag <- ggplot(data = dat.SR, aes(x = NSnag, y = Y)) +
   geom_line(data = dat.pred.NSnag, aes(x = NSnag.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
   labs(x = "Number of snags (NSnag)", y = NULL)
 
-p.PIPO <- ggplot(data = dat.SR, aes(x = PIPO, y = Y)) + 
-  geom_point(alpha = 0.3) +
-  geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
-  geom_ribbon(data = dat.pred.PIPO, aes(x = PIPO.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
-  geom_line(data = dat.pred.PIPO, aes(x = PIPO.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
-  labs(x = "Ponderosa pine canopy (PIPO)", y = NULL)
-
-p.PSME <- ggplot(data = dat.SR, aes(x = PSME, y = Y)) + 
-  geom_point(alpha = 0.3) +
-  geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
-  geom_ribbon(data = dat.pred.PSME, aes(x = PSME.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
-  geom_line(data = dat.pred.PSME, aes(x = PSME.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
-  labs(x = "Douglas fir canopy (PSME)", y = NULL)
+# p.PIPO <- ggplot(data = dat.SR, aes(x = PIPO, y = Y)) + 
+#   geom_point(alpha = 0.3) +
+#   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
+#   geom_ribbon(data = dat.pred.PIPO, aes(x = PIPO.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
+#   geom_line(data = dat.pred.PIPO, aes(x = PIPO.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
+#   labs(x = "Ponderosa pine canopy (PIPO)", y = NULL)
+# 
+# p.PSME <- ggplot(data = dat.SR, aes(x = PSME, y = Y)) + 
+#   geom_point(alpha = 0.3) +
+#   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
+#   geom_ribbon(data = dat.pred.PSME, aes(x = PSME.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
+#   geom_line(data = dat.pred.PSME, aes(x = PSME.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
+#   labs(x = "Douglas fir canopy (PSME)", y = NULL)
 
 p.POTR5 <- ggplot(data = dat.SR, aes(x = POTR5, y = Y)) + 
   geom_point(alpha = 0.3) +
@@ -354,26 +362,26 @@ p.LadFuel <- ggplot(data = dat.SR, aes(x = LadFuel, y = Y)) +
   geom_line(data = dat.pred.LadFuel, aes(x = LadFuel.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
   labs(x = "Ladder fuels (LadFuel)", y = NULL)
 
-p.Herb <- ggplot(data = dat.SR, aes(x = Herb, y = Y)) + 
-  geom_point(alpha = 0.3) +
-  geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
-  geom_ribbon(data = dat.pred.Herb, aes(x = Herb.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
-  geom_line(data = dat.pred.Herb, aes(x = Herb.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
-  labs(x = "Herbaceous volume (Herb)", y = NULL)
+# p.Herb <- ggplot(data = dat.SR, aes(x = Herb, y = Y)) + 
+#   geom_point(alpha = 0.3) +
+#   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
+#   geom_ribbon(data = dat.pred.Herb, aes(x = Herb.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
+#   geom_line(data = dat.pred.Herb, aes(x = Herb.x, y = Y.md), colour = "blue", size = 1.5, inherit.aes = F) + 
+#   labs(x = "Herbaceous volume (Herb)", y = NULL)
 
 p <- ggdraw() + 
-  draw_plot(p.CanCov, x = 0.03, y = 0.6667, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.CanHt, x = 0.3533333, y = 0.6667, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.NSnag, x = 0.6766667, y = 0.6667, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.PIPO, x = 0.03, y = 0.3333, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.PSME, x = 0.3533333, y = 0.3333, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.POTR5, x = 0.6766667, y = 0.3333, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.ShrbVol, x = 0.03, y = 0, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.LadFuel, x = 0.3533333, y = 0, width = 0.3233333, height = 0.3333) +
-  draw_plot(p.Herb, x = 0.6766667, y = 0, width = 0.3233333, height = 0.3333) +
+  draw_plot(p.CanCov, x = 0.03, y = 0.5, width = 0.3233333, height = 0.5) +
+  draw_plot(p.CanHt, x = 0.3533333, y = 0.5, width = 0.3233333, height = 0.5) +
+  draw_plot(p.NSnag, x = 0.6766667, y = 0.5, width = 0.3233333, height = 0.5) +
+  # draw_plot(p.PIPO, x = 0.03, y = 0.3333, width = 0.3233333, height = 0.3333) +
+  # draw_plot(p.PSME, x = 0.3533333, y = 0.3333, width = 0.3233333, height = 0.3333) +
+  draw_plot(p.POTR5, x = 0.03, y = 0, width = 0.3233333, height = 0.5) +
+  draw_plot(p.ShrbVol, x = 0.3533333, y = 0, width = 0.3233333, height = 0.5) +
+  draw_plot(p.LadFuel, x = 0.6766667, y = 0, width = 0.3233333, height = 0.5) +
+  # draw_plot(p.Herb, x = 0.6766667, y = 0, width = 0.3233333, height = 0.3333) +
   draw_plot_label("N[theta]", x = 0, y = 0.5, size = 20, angle = 90, hjust = 0, parse = T)
 
-save_plot("Plot_richness_veg.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+save_plot("Plot_richness_veg.tiff", p, ncol = 3, nrow = 2, dpi = 200)
 
 
 # # Shrub-overstory height ratio #

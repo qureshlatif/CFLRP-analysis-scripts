@@ -4,12 +4,12 @@ library(dplyr)
 library(R.utils)
 library(ggplot2)
 library(cowplot)
+library(QSLpersonal)
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
 
 mod <- loadObject("mod_habitat_d0yr_reduced")
-mod_shrub <- loadObject("mod_habitat_d0yr_reduced_unconverged_temp")
 
 spp_trt_effects <- c("WISA", "RECR", "WEWP", "CAFI", "CONI",
                      "AMRO", "GRAJ", "PIGR", "EVGR", "CLNU",
@@ -19,8 +19,8 @@ spp_trt_effects <- c("WISA", "RECR", "WEWP", "CAFI", "CONI",
                      "SOSP", "HETH", "VIWA")
 
 # Tabulate parameter estimates
-pars <- c("bd.TWI", "bd.heatload", "bd.ForAR", "bd.PACC10_3km", "bd.PACC40_3km", "bd.mnPerArRatio_Opn3km", 
-          "bb.CanCov", "bb.CanHt", "bb.NumSnags", "bb.RCOV_PP", "bb.RCOV_DF", "bb.RCOV_AS", "bb.shvol",
+pars <- c("psi", "bd.TWI", "bd.heatload", "bd.ForAR", "bd.PACC10_3km", "bd.PACC40_3km", "bd.mnPerArRatio_Opn3km", 
+          "theta", "bb.CanCov", "bb.CanHt", "bb.NumSnags", "bb.RCOV_PP", "bb.RCOV_DF", "bb.RCOV_AS", "bb.shvol",
           "bb.RSCV_Ladder", "bb.HerbGrassVol")
 cols <- (c("", ".lo", ".hi") %>%
            expand.grid(pars, stringsAsFactors = F) %>%
@@ -28,29 +28,35 @@ cols <- (c("", ".lo", ".hi") %>%
            mutate(Var3 = str_c(Var2, Var1, sep = "")))$Var3
 tbl_pars <- matrix(NA, nrow = length(spp.list), ncol = length(cols), dimnames = list(NULL, cols))
 
-#for(i in 1:length(pars)) { # tenp off
-parst <- pars[-which(pars %in% c("bd.ForAR", "bb.shvol"))] # temp on
-for(i in 1:length(parst)) { # tenp on
-  parm <- mod$sims.list[[parst[i]]]
-  tbl_pars[, parst[i]] <- apply(parm, 2, median)
-  tbl_pars[, str_c(parst[i], ".lo")] <- apply(parm, 2, function(x) quantile(x, prob = 0.025, type = 8))
-  tbl_pars[, str_c(parst[i], ".hi")] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, type = 8))
+for(par in pars[-which(pars %in% c("psi", "theta"))]) {
+  parm <- mod$sims.list[[par]]
+  tbl_pars[, par] <- apply(parm, 2, median)
+  tbl_pars[, str_c(par, ".lo")] <- apply(parm, 2, function(x) quantile(x, prob = 0.025, type = 8))
+  tbl_pars[, str_c(par, ".hi")] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, type = 8))
 }
-rm(parst)
-parm <- mod_shrub$sims.list[["bb.shvol"]]
-tbl_pars[, "bb.shvol"] <- apply(parm, 2, median)
-tbl_pars[, "bb.shvol.lo"] <- apply(parm, 2, function(x) quantile(x, prob = 0.025, type = 8))
-tbl_pars[, "bb.shvol.hi"] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, type = 8))
+rm(par)
+
+parm <- expit(mod$sims.list[["d0"]])
+tbl_pars[, "psi"] <- apply(parm, 2, median)
+tbl_pars[, "psi.lo"] <- apply(parm, 2, function(x) quantile(x, prob = 0.025, type = 8))
+tbl_pars[, "psi.hi"] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, type = 8))
+
+parm <- expit(mod$sims.list[["b0"]])
+tbl_pars[, "theta"] <- apply(parm, 2, median)
+tbl_pars[, "theta.lo"] <- apply(parm, 2, function(x) quantile(x, prob = 0.025, type = 8))
+tbl_pars[, "theta.hi"] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, type = 8))
 
 rm(parm)
 tbl_pars_all <- tbl_pars
-tbl_pars <- tbl_pars[, 10:45]
+tbl_pars <- tbl_pars[, c(1:3, 13:51)]
 
+beta.cols <- dimnames(tbl_pars)[[2]][-which(dimnames(tbl_pars)[[2]] %in% c("psi", "psi.lo", "psi.hi",
+                                                                           "theta", "theta.lo", "theta.hi"))]
 ind.spp <- c(which(spp.list %in% spp_trt_effects),
-             tbl_pars[, dimnames(tbl_pars)[[2]] %>% str_detect(".lo")] %>%
+             tbl_pars[, beta.cols[beta.cols %>% str_detect(".lo") %>% which]] %>%
                apply(1, function(x) any(x > 0)) %>%
                which,
-             tbl_pars[, dimnames(tbl_pars)[[2]] %>% str_detect(".hi")] %>%
+             tbl_pars[, beta.cols[beta.cols %>% str_detect(".hi") %>% which]] %>%
                apply(1, function(x) any(x < 0)) %>%
                which) %>% unique %>% sort
 spp.plt <- spp.list[ind.spp]
@@ -63,7 +69,7 @@ dat.plt <- tbl_pars %>% tbl_df() %>%
 dat.plt$Spp[which(dat.plt$Spp %in% spp_trt_effects)] <-
   dat.plt$Spp[which(dat.plt$Spp %in% spp_trt_effects)] %>% str_c("*")
 
-cols <- pars[-c(1:3)] %>% str_c(".supp")
+cols <- pars[-c(1:4, 8)] %>% str_c(".supp")
 dat.supp <- matrix("none", nrow = nrow(dat.plt), ncol = length(cols),
                    dimnames = list(NULL, cols))
 for(i in 1:length(cols)) {
@@ -79,6 +85,15 @@ dat.plt <- dat.plt %>%
 rm(dat.supp)
 
 ## Grid level relationships ##
+p.psi <- ggplot(dat = dat.plt, aes(x = index, y = psi)) +
+  geom_errorbar(aes(ymin = psi.lo, ymax = psi.hi), size=1, width=0) +
+  geom_point(size = 2.5) + 
+  coord_flip() +
+  scale_x_continuous(breaks = 1:nrow(dat.plt), labels = dat.plt$Spp %>% rev, expand=c(0, 1)) +
+  scale_y_continuous(lim = c(0, 1)) +
+  ylab(expression(hat(psi)["mean"])) + xlab(NULL) +
+  theme(axis.title.x=element_text(size=25))
+
 p.PACCGap <- ggplot(dat = dat.plt, aes(x = index, y = bd.PACC10_3km, color = bd.PACC10_3km.supp)) +
   geom_errorbar(aes(ymin = bd.PACC10_3km.lo, ymax = bd.PACC10_3km.hi, color = bd.PACC10_3km.supp), size=1, width=0) +
   geom_point(size = 2.5) + 
@@ -116,14 +131,24 @@ p.PAROpn <- ggplot(dat = dat.plt, aes(x = index, y = bd.mnPerArRatio_Opn3km, col
   guides(color = F)
 
 p <- ggdraw() + 
-  draw_plot(p.PACCGap, x = 0.05, y = 0, width = 0.3166667, height = 1) +
-  draw_plot(p.PACCOpn, x = 0.3666667, y = 0, width = 0.3166667, height = 1) +
-  draw_plot(p.PAROpn, x = 0.6833333, y = 0, width = 0.3166667, height = 1) +
+  draw_plot(p.psi, x = 0.05, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.PACCGap, x = 0.2875, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.PACCOpn, x = 0.5250, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.PAROpn, x = 0.7625, y = 0, width = 0.2375, height = 1) +
   draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
 
-save_plot("Plot_landscape_effects.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+save_plot("Plot_landscape_effects.tiff", p, ncol = 4, nrow = 3, dpi = 200)
 
-## Point level relationships ##
+## Point level relationships 1 ##
+p.theta <- ggplot(dat = dat.plt, aes(x = index, y = theta)) +
+  geom_errorbar(aes(ymin = theta.lo, ymax = theta.hi), size=1, width=0) +
+  geom_point(size = 2.5) + 
+  coord_flip() +
+  scale_x_continuous(breaks = 1:nrow(dat.plt), labels = dat.plt$Spp %>% rev, expand=c(0, 1)) +
+  scale_y_continuous(lim = c(0, 1)) +
+  ylab(expression(hat(theta)["mean"])) + xlab(NULL) +
+  theme(axis.title.x=element_text(size=25))
+
 p.CanCov <- ggplot(dat = dat.plt, aes(x = index, y = bb.CanCov, color = bb.CanCov.supp)) +
   geom_errorbar(aes(ymin = bb.CanCov.lo, ymax = bb.CanCov.hi, color = bb.CanCov.supp), size=1, width=0) +
   geom_point(size = 2.5) + 
@@ -162,7 +187,16 @@ p.NSnag <- ggplot(dat = dat.plt, aes(x = index, y = bb.NumSnags, color = bb.NumS
   ylab(expression(hat(beta)["NSnag"])) + xlab(NULL) +
   theme(axis.title.x=element_text(size=25)) +
   guides(color = F)
-  
+
+p <- ggdraw() + 
+  draw_plot(p.theta, x = 0.0500, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.CanCov, x = 0.2875, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.CanHt, x = 0.5250, y = 0, width = 0.2375, height = 1) +
+  draw_plot(p.NSnag, x = 0.7625, y = 0, width = 0.2375, height = 1) +
+  draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
+
+save_plot("Plot_veg_canStruct_effects.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+
 p.PIPO <- ggplot(dat = dat.plt, aes(x = index, y = bb.RCOV_PP, color = bb.RCOV_PP.supp)) +
   geom_errorbar(aes(ymin = bb.RCOV_PP.lo, ymax = bb.RCOV_PP.hi, color = bb.RCOV_PP.supp), size=1, width=0) +
   geom_point(size = 2.5) + 
@@ -242,15 +276,26 @@ p.Herb <- ggplot(dat = dat.plt, aes(x = index, y = bb.HerbGrassVol, color = bb.H
   guides(color = F)
 
 p <- ggdraw() + 
-  draw_plot(p.CanCov, x = 0.03, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.CanHt, x = 0.1377778, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.NSnag, x = 0.2455556, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.PIPO, x = 0.3533333, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.PSME, x = 0.4611111, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.POTR5, x = 0.5688889, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.ShrbVol, x = 0.6766667, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.LadFuel, x = 0.7844444, y = 0, width = 0.1077778, height = 1) +
-  draw_plot(p.Herb, x = 0.8922222, y = 0, width = 0.1077778, height = 1) +
+  draw_plot(p.PIPO, x = 0.05, y = 0, width = 0.1583333, height = 1) +
+  draw_plot(p.PSME, x = 0.2083333, y = 0, width = 0.1583333, height = 1) +
+  draw_plot(p.POTR5, x = 0.3666667, y = 0, width = 0.1583333, height = 1) +
+  draw_plot(p.ShrbVol, x = 0.5250000, y = 0, width = 0.1583333, height = 1) +
+  draw_plot(p.LadFuel, x = 0.6833333, y = 0, width = 0.1583333, height = 1) +
+  draw_plot(p.Herb, x = 0.8416667, y = 0, width = 0.1583333, height = 1) +
   draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
 
-save_plot("Plot_veg_effects.tiff", p, ncol = 6, nrow = 3, dpi = 200)
+save_plot("Plot_veg_CanComp&Understory_effects.tiff", p, ncol = 4, nrow = 3, dpi = 200)
+
+p <- ggdraw() + 
+  draw_plot(p.theta, x = 0.03, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.CanCov, x = 0.127, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.CanHt, x = 0.224, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.NSnag, x = 0.321, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.PIPO, x = 0.418, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.PSME, x = 0.515, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.POTR5, x = 0.612, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.ShrbVol, x = 0.709, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.LadFuel, x = 0.806, y = 0, width = 0.097, height = 1) +
+  draw_plot(p.Herb, x = 0.903, y = 0, width = 0.097, height = 1) +
+  draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
+save_plot("Plot_veg_all_effects.tiff", p, ncol = 6, nrow = 3, dpi = 200)
