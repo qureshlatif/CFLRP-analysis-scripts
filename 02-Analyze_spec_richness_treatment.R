@@ -5,6 +5,7 @@ library(R.utils)
 library(ggplot2)
 library(cowplot)
 library(lme4)
+library(QSLpersonal)
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -70,111 +71,78 @@ dat.SR <- data.frame(X = (PctTrt.d %>% apply(1, mean, na.rm = T))) %>%
          Y.lo = SPR %>% apply(c(1, 2), mean) %>%
            apply(2, function(x) quantile(x,prob=0.025,type=8)) %>% as.numeric,
          Y.hi = SPR %>% apply(c(1, 2), mean) %>%
-           apply(2, function(x) quantile(x,prob=0.975,type=8)) %>% as.numeric) %>%
-  filter(!is.na(X))
+           apply(2, function(x) quantile(x,prob=0.975,type=8)) %>% as.numeric)
 
-p.grid <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
+p.ptrt <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
   geom_point(alpha = 0.3) +
   geom_errorbar(aes(ymin = Y.lo, ymax = Y.hi), width = 1, alpha = 0.3) +
   geom_ribbon(data = dat.pred, aes(x = PctTrt.x, ymin = Y.lo, ymax = Y.hi), alpha = 0.2, inherit.aes = F) +
   geom_line(data = dat.pred, aes(x = PctTrt.x, y = Y.md), colour = "blue", size = 1.5) + 
-  labs(x= "Percent treated (grid)", y = NULL)
+  labs(x= "Percent treated", y = "Species richness (grid)")
 
 ## Point level ##
 
 Trt.b <- Cov[, "Trt_stat"] # Point-level values
-YST.b <- Cov[, "Trt_time"] %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-YST.b <- replace(YST.b, which(is.na(YST.b)), 0) # Point-level values
-ID <- Cov[, "gridIndex"] %>% as.factor
+YST.b <- Cov[, "Trt_time"] # Point-level values
 SPR <- mod$sims.list$SR.point
-
-# dat.pred = data.frame(Trt = c(0, 1),
-#                       YST = c(0, 0))
-# Y <- matrix(NA, nrow = dim(SPR)[1], ncol = nrow(dat.pred))
-# B0_pnt <- B_Trt <- B_YST <- B0_pntSD <- rep(NA, length = dim(SPR)[1])
-# options(warn=1) # Change to warn=2 to investigate convergence warnings.
-# for(i in 1:dim(SPR)[1]) {
-#   dat <- data.frame(y = SPR[i,],
-#                     Trt = Trt.b,
-#                     YST = YST.b,
-#                     ID = ID)
-#   m <- glmer(y ~ Trt + YST + (1|ID), data = dat, family = "poisson")
-#   B0_pnt[i] <- summary(m)$coefficients["(Intercept)", "Estimate"]
-#   B_Trt[i] <- summary(m)$coefficients["Trt", "Estimate"]
-#   B_YST[i] <- summary(m)$coefficients["YST", "Estimate"]
-#   B0_pntSD[i] <- as.data.frame(VarCorr(m))$sdcor
-#   Y[i, ] <- predict(m, dat.pred, re.form = NA, type = "response")
-# }
-# B0_pnt <- str_c(median(B0_pnt, na.rm = T) %>% round(digits = 2),
-#                 " (",
-#                 quantile(B0_pnt, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2),
-#                 ",",
-#                 quantile(B0_pnt, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2),
-#                 ")")
-# B_Trt <- str_c(median(B_Trt, na.rm = T) %>% round(digits = 2),
-#                 " (",
-#                 quantile(B_Trt, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2),
-#                 ",",
-#                 quantile(B_Trt, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2),
-#                 ")")
-# B_YST <- str_c(median(B_YST, na.rm = T) %>% round(digits = 2),
-#                " (",
-#                quantile(B_YST, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2),
-#                ",",
-#                quantile(B_YST, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2),
-#                ")")
-# B0_pntSD <- str_c(median(B0_pntSD, na.rm = T) %>% round(digits = 2),
-#                " (",
-#                quantile(B0_pntSD, prob = 0.025, type = 8, na.rm = T) %>% round(digits = 2),
-#                ",",
-#                quantile(B0_pntSD, prob = 0.975, type = 8, na.rm = T) %>% round(digits = 2),
-#                ")")
-# 
-# dat.pred <- dat.pred %>%
-#   mutate(Y.md = apply(Y, 2, median),
-#          Y.lo = apply(Y, 2, function(x) quantile(x, prob = 0.025, type = 8)),
-#          Y.hi = apply(Y, 2, function(x) quantile(x, prob = 0.975, type = 8)))
-# write.csv(dat.pred, "Spp_richness_dat_pred_cache.csv", row.names = F)
-# saveObject(B0_pnt, "B0_pnt_pnt_N_trt_cache")
-# saveObject(B_Trt, "B_Trt_pnt_N_trt_cache")
-# saveObject(B_YST, "B_YST_pnt_N_trt_cache")
-# saveObject(B0_pntSD, "B0_pntSD_pnt_N_trt_cache")
-# rm(i, m, Y)
-
-dat.pred <- read.csv("Spp_richness_dat_pred_cache.csv", header = T)
-B0_pnt <- loadObject("B0_pnt_pnt_N_trt_cache")
-B_Trt <- loadObject("B_Trt_pnt_N_trt_cache")
-B_YST <- loadObject("B_YST_pnt_N_trt_cache")
-B0_pntSD <- loadObject("B0_pntSD_pnt_N_trt_cache")
-
-dat.SR <- data.frame(X = (Trt.b %>% as.numeric)) %>%
+dat.SR <- data.frame(Trt = (Trt.b %>% as.numeric),
+                     YST = YST.b) %>%
   mutate(#X = X + runif(length(Trt.b), -0.4, 0.4),
     Y = apply(SPR, 2, median) %>% as.numeric,
     Y.lo = apply(SPR, 2,function(x) quantile(x,prob=0.025,type=8)) %>%
       as.numeric,
     Y.hi = apply(SPR, 2, function(x) quantile(x,prob=0.975,type=8)) %>%
-      as.numeric) %>%
-  filter(!is.na(X))
+      as.numeric)
+psi <- expit(apply(mod$sims.list$d0, c(1, 2), mean))
+b0 <- mod$sims.list$b0
 
+dat.pred = data.frame(x = c(0, 1))
+b1 <- mod$sims.list$bb.trt
+SR.pred <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
+for(i in 1:dim(SR.pred)[2]) {
+  theta <- expit(b0 + b1*dat.pred$x[i])
+  SR.pred[, i] <- apply(psi * theta, 1, sum)
+}
+dat.pred <- dat.pred %>%
+  mutate(pred.md = apply(SR.pred, 2, median),
+         pred.lo = apply(SR.pred, 2, function(x) quantile(x, prob = 0.025, type = 8)),
+         pred.hi = apply(SR.pred, 2, function(x) quantile(x, prob = 0.975, type = 8)))
 jitter = runif(length(Trt.b), -0.4, 0.4)
-p.point <- ggplot(data = dat.SR, aes(x = X, y = Y)) + 
-  geom_point(aes(x = X + jitter), alpha = 0.3) + 
-  geom_errorbar(aes(x = X + jitter, ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.3) +
-  geom_errorbar(data = dat.pred, aes(x = Trt, ymin = Y.lo, ymax = Y.hi), width = 0.3, size = 1, color = "blue", inherit.aes = F) +
-  geom_point(data = dat.pred, aes(x = Trt, y = Y.md), size = 3, color = "blue", inherit.aes = F) + 
+p.trt <- ggplot(data = dat.SR, aes(x = Trt, y = Y)) + 
+  geom_point(aes(x = Trt + jitter), alpha = 0.1) + 
+  geom_errorbar(aes(x = Trt + jitter, ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.1) +
+  geom_errorbar(data = dat.pred, aes(x = x, ymin = pred.lo, ymax = pred.hi), width = 0.3, size = 1, color = "blue", inherit.aes = F) +
+  geom_point(data = dat.pred, aes(x = x, y = pred.md), size = 3, color = "blue", inherit.aes = F) + 
   scale_x_continuous(breaks = c(0, 1), labels = c("Untreated", "Treated")) +
-  labs(x = "Treatment status (point)", y = NULL)
+  labs(x = "Treatment status", y = "Species richness (point)")
+
+dat.pred = data.frame(x = seq(min(YST.b, na.rm = T), max(YST.b, na.rm = T), by = 1)) %>%
+  mutate(z = (x - mean(YST.b, na.rm = T)) / sd(YST.b, na.rm = T))
+b1 <- mod$sims.list$bb.trt
+b2 <- mod$sims.list$bb.YST
+SR.pred <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
+for(i in 1:dim(SR.pred)[2]) {
+  theta <- expit(b0 + b1 + b2*dat.pred$z[i])
+  SR.pred[, i] <- apply(psi * theta, 1, sum)
+}
+dat.pred <- dat.pred %>%
+  mutate(pred.md = apply(SR.pred, 2, median),
+         pred.lo = apply(SR.pred, 2, function(x) quantile(x, prob = 0.025, type = 8)),
+         pred.hi = apply(SR.pred, 2, function(x) quantile(x, prob = 0.975, type = 8)))
+p.yst <- ggplot(data = dat.SR %>% filter(!is.na(YST)), aes(x = YST, y = Y)) + 
+  geom_point(aes(x = YST), alpha = 0.1) + 
+  geom_errorbar(aes(x = YST, ymin = Y.lo, ymax = Y.hi), width = 0, alpha = 0.1) +
+  geom_ribbon(data = dat.pred, aes(x = x, ymin = pred.lo, ymax = pred.hi), alpha = 0.3, inherit.aes = F) +
+  geom_line(data = dat.pred, aes(x = x, y = pred.md), size = 1, color = "blue", inherit.aes = F) +
+  scale_x_continuous(breaks = 1:10, labels = 1:10) +
+  labs(x = "Year since treatment", y = NULL)
 
 p <- ggdraw() + 
-  draw_plot(p.grid, x = 0.03, y = 0, width = 0.47, height = 1) +
-  draw_plot(p.point, x = 0.53, y = 0, width = 0.47, height = 1) +
-  draw_plot_label(c("N[psi]", "N[theta]"),
-                  x = c(0, 0.5), y = c(0.5, 0.5),
-                  size = c(20, 20), angle = c(90, 90),
-                  hjust = c(0, 0), parse = T)
+  draw_plot(p.ptrt, x = 0.0, y = 0.5, width = 0.525, height = 0.5) +
+  draw_plot(p.trt, x = 0, y = 0, width = 0.525, height = 0.5) +
+  draw_plot(p.yst, x = 0.5, y = 0, width = 0.475, height = 0.5)
 
-save_plot("Plot_richness_treatment.tiff", p, ncol = 2, nrow = 1, dpi = 200)
+save_plot("Plot_richness_treatment.tiff", p, ncol = 2, nrow = 2, dpi = 200)
 
 #c(median(mod$sims.list$rho.ab), quantile(mod$sims.list$rho.ab, prob = 0.025, type = 8), quantile(mod$sims.list$rho.ab, prob = 0.975, type = 8))
 #c(median(mod$sims.list$rho.bd), quantile(mod$sims.list$rho.bd, prob = 0.025, type = 8), quantile(mod$sims.list$rho.bd, prob = 0.975, type = 8))

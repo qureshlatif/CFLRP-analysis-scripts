@@ -47,8 +47,8 @@ rm(parm, p_star, i)
 tbl_pars <- tbl_pars %>% tbl_df() %>%
   mutate(Spp = spp.list) %>%
   mutate(NDET = apply(Y.mat, 2, sum) == 0) %>%
-  mutate(p_star_md = as.numeric(p_star_md)) %>%
-  arrange(p_star_md) %>%
+  #mutate(p_star_md = as.numeric(p_star_md)) %>%
+  #arrange(p_star_md) %>%
   select(Spp, NDET, p_star, ba.Time:ba.YST)
 
 write.csv(tbl_pars, "Detection_estimates_treatment.csv", row.names = F)
