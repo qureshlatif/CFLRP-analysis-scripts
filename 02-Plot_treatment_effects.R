@@ -69,7 +69,7 @@ pd.ptrt.supp <- ggplot(dat = dat.supp, aes(x = index, y = bd.ptrt)) +
   scale_x_continuous(breaks = 1:nrow(dat.supp), labels = dat.supp$Spp, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bd.ptrt.lo), max(dat.plt$bd.ptrt.hi))) +
   scale_color_manual(values = c("#000000", "#D55E00")) +
-  ylab(expression(hat(beta)["percent treated"])) + xlab(NULL) +
+  ylab(expression(hat(delta)["percTrt"])) + xlab(NULL) +
   theme(axis.title.y=element_text(size=30)) +
   theme(axis.title.x=element_text(size=30)) +
   theme(axis.text.x=element_text(size=15)) +
@@ -97,7 +97,7 @@ pb.trt.supp <- ggplot(dat = dat.supp, aes(x = index, y = bb.trt)) +
   scale_x_continuous(breaks = 1:nrow(dat.supp), labels = dat.supp$Spp, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bb.trt.lo), max(dat.plt$bb.trt.hi))) +
   scale_color_manual(values = c("#0072B2", "#000000", "#D55E00")) +
-  ylab(expression(hat(beta)["treatment status"])) + xlab(NULL) +
+  ylab(expression(hat(beta)["Trt"])) + xlab(NULL) +
   theme(axis.title.y=element_text(size=30)) +
   theme(axis.title.x=element_text(size=30)) +
   theme(axis.text.x=element_text(size=15)) +
@@ -125,7 +125,7 @@ pb.YST.supp <- ggplot(dat = dat.supp, aes(x = index, y = bb.YST)) +
   scale_x_continuous(breaks = 1:nrow(dat.supp), labels = dat.supp$Spp, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bb.YST.lo), max(dat.plt$bb.YST.hi))) +
   scale_color_manual(values = c("#0072B2", "#000000")) +
-  ylab(expression(hat(beta)["years since treatment"])) + xlab(NULL) +
+  ylab(expression(hat(beta)["YST"])) + xlab(NULL) +
   theme(axis.title.y=element_text(size=30)) +
   theme(axis.title.x=element_text(size=30)) +
   theme(axis.text.x=element_text(size=15)) +

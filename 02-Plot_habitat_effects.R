@@ -102,7 +102,7 @@ p.PACCGap <- ggplot(dat = dat.plt, aes(x = index, y = bd.PACC10_3km, color = bd.
   scale_x_continuous(breaks = 1:nrow(dat.plt), labels = dat.plt$Spp %>% rev, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bd.PACC10_3km.lo), max(dat.plt$bd.PACC10_3km.hi))) +
   scale_color_manual(values = c("#0072B2", "dark gray", "#D55E00")) +
-  ylab(expression(hat(beta)["PACCGap"])) + xlab(NULL) +
+  ylab(expression(hat(delta)["PACCGap"])) + xlab(NULL) +
   theme(axis.title.x=element_text(size=25)) +
   guides(color = F)
 
@@ -114,7 +114,7 @@ p.PACCOpn <- ggplot(dat = dat.plt, aes(x = index, y = bd.PACC40_3km, color = bd.
   scale_x_continuous(breaks = 1:nrow(dat.plt), labels = dat.plt$Spp %>% rev, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bd.PACC10_3km.lo), max(dat.plt$bd.PACC10_3km.hi))) +
   scale_color_manual(values = c("#0072B2", "dark gray", "#D55E00")) +
-  ylab(expression(hat(beta)["PACCOpn"])) + xlab(NULL) +
+  ylab(expression(hat(delta)["PACCOpn"])) + xlab(NULL) +
   theme(axis.title.x=element_text(size=25)) +
   guides(color = F)
 
@@ -126,7 +126,7 @@ p.PAROpn <- ggplot(dat = dat.plt, aes(x = index, y = bd.mnPerArRatio_Opn3km, col
   scale_x_continuous(breaks = 1:nrow(dat.plt), labels = dat.plt$Spp %>% rev, expand=c(0, 1)) +
   scale_y_continuous(lim = c(min(dat.plt$bd.PACC10_3km.lo), max(dat.plt$bd.PACC10_3km.hi))) +
   scale_color_manual(values = c("#0072B2", "dark gray", "#D55E00")) +
-  ylab(expression(hat(beta)["PAROpn"])) + xlab(NULL) +
+  ylab(expression(hat(delta)["PAROpn"])) + xlab(NULL) +
   theme(axis.title.x=element_text(size=25)) +
   guides(color = F)
 
