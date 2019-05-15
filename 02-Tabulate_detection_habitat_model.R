@@ -1,5 +1,3 @@
-#*** Need to complete once model is done ***#
-
 library(jagsUI)
 library(stringr)
 library(dplyr)
@@ -14,7 +12,7 @@ load("Data_compiled.RData")
 mod <- loadObject("mod_habitat_d0yr_reduced")
 
 # Tabulate parameter estimates
-pars <- c("p_star", "p_star_md", "ba.Time", "ba.Time2", "ba.DOY", "ba.trt", "ba.YST")
+pars <- c("p_star", "p_star_md", "ba.Time", "ba.Time2", "ba.DOY", "ba.ccov", "ba.shvol")
 tbl_pars <- matrix(NA, nrow = length(spp.list), ncol = length(pars),
                    dimnames = list(NULL, pars))
 
@@ -54,8 +52,8 @@ tbl_pars <- tbl_pars %>% tbl_df() %>%
   mutate(CovSupp = (str_sub(ba.Time, -1, -1) == "*" |
                       str_sub(ba.Time2, -1, -1) == "*" |
                       str_sub(ba.DOY, -1, -1) == "*" |
-                      str_sub(ba.trt, -1, -1) == "*" |
-                      str_sub(ba.YST, -1, -1) == "*")) %>%
-  select(Spp, NDET, CovSupp, p_star, ba.Time:ba.YST)
+                      str_sub(ba.ccov, -1, -1) == "*" |
+                      str_sub(ba.shvol, -1, -1) == "*")) %>%
+  select(Spp, NDET, CovSupp, p_star, ba.Time:ba.shvol)
 
-write.csv(tbl_pars, "Detection_estimates_treatment.csv", row.names = F)
+write.csv(tbl_pars, "Detection_estimates_habitat.csv", row.names = F)
