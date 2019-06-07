@@ -6,6 +6,7 @@ library(ggplot2)
 library(cowplot)
 library(lme4)
 library(QSLpersonal)
+library(MASS)
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -37,10 +38,15 @@ B0.grid <- B1.grid <- B2.grid <- r <- numeric(length = dim(SPR)[1])
 for(i in 1:dim(SPR)[1]) {
   dat = dat.x %>% mutate(N = SPR[i,,] %>% apply(1, mean))
   m <- suppressWarnings(glm(N ~ PctTrt.z + I(PctTrt.z^2), data = dat, family = "poisson"))
-  B0.grid[i] <- m$coefficients["(Intercept)"]
-  B1.grid[i] <- m$coefficients["PctTrt.z"]
-  B2.grid[i] <- m$coefficients["I(PctTrt.z^2)"]
-  Y[i, ] <- predict(m, dat.pred, type = "response")
+  mn <- m$coefficients
+  vc <- vcov(m)
+  cfs <- mvrnorm(1, mn, vc)
+  B0.grid[i] <- cfs["(Intercept)"]
+  B1.grid[i] <- cfs["PctTrt.z"]
+  B2.grid[i] <- cfs["I(PctTrt.z^2)"]
+  X <- cbind(1, dat.pred$PctTrt.z, dat.pred$PctTrt.z^2) %>% as.matrix
+  Y[i, ] <- exp(X %*% cfs)
+  #Y[i, ] <- predict(m, dat.pred, type = "response")
 }
 dat.pred <- dat.pred %>%
   mutate(Y.md = apply(Y, 2, median),

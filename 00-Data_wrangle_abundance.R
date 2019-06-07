@@ -378,7 +378,8 @@ dat.gis <- dat.gis %>%
   mutate(Trt_status = replace(Trt_status, which(Trt_status == 9999), NA)) %>%
   mutate(Trt_time = Year - Trt_status) %>%
   mutate(Trt_time = replace(Trt_time, which(Trt_stat == 0), NA)) %>%
-  select(Point_year, Trt_stat, Trt_time, TWIP, heatload, TWI, Rdens_1km) %>%
+  mutate(ForAR = (Forest == "AR") %>% as.integer) %>%
+  select(Point_year, Trt_stat, Trt_time, TWIP, heatload, TWI, Rdens_1km, ForAR) %>%
   rename(Rdens = Rdens_1km)
 
 veg_data <- veg_data %>% left_join(dat.gis, by = "Point_year")
@@ -437,7 +438,8 @@ dat.gis <- dat.gis %>%
             TWIP = mean(TWIP),
             heatload = mean(heatload),
             TWI = mean(TWI),
-            Rdens = mean(Rdens))
+            Rdens = mean(Rdens),
+            ForAR = mean(ForAR))
 
 landscape_data <- landscape_data %>%
   left_join(dat.gis, by = c("Grid", "Year"))

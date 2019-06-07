@@ -8,9 +8,7 @@ load("Data_compiled_abundance.RData")
 
 #___ Script inputs ___#
 model.file <- "CFLRP-analysis-scripts/model_abundance_treatment_global.jags"
-spp <- "CHSP"
-spp.ind <- which(Spp == spp)
-#detection.model <- "HZ" # Set to "HZ" for hazard rate of "HN" for half-normal
+save.out.loc <- "abund_models/"
 
 # MCMC values.  Adjust as needed.
 nc <- 3
@@ -18,21 +16,15 @@ nb <- 5000
 ni <- 30000
 nt <- 10
 
-save.out <- str_c("abund_models/mod_", spp, "_abundance_treatment_global")
+#save.out <- str_c("abund_models/mod_", spp, "_abundance_treatment_global")
 #_____________________#
-
-area.band <- area.band.list[[spp.ind]]
-area.prop <- area.prop.list[[spp.ind]]
-breaks <- breaks.list[[spp.ind]]
-area.circle <- area.circle.list[spp.ind]
-cutoff <- cutoff.list[spp.ind]
 
 data <- list("Y",
              "dclass", "mean.cl", "sd.cl", # needed for distance sampling
              "gridID", "yearID", "nGrid", "n.year", "nPoint",
              "nInd", "nG", "area.band", "area.prop", "breaks", # needed for distance sampling
-             "PctTrt.d", "TWI.d", "heatload.d", "trt.b", "YST.b",
-             "DOY.b", "Time.b")
+             "PctTrt.d", "TWI.d", "heatload.d", "ForAR.d",
+             "trt.b", "YST.b", "DOY.b", "Time.b")
 
 parameters <- c("beta0.mean", "beta0.sd", #"N.mean", "p.mean", # Assemble the parameters vector for JAGS (What we want to track).
                 "beta0", "N", "cl.size",
@@ -48,13 +40,6 @@ parameters <- c("beta0.mean", "beta0.sd", #"N.mean", "p.mean", # Assemble the pa
                 "lambda", "a", # Needed for WAIC
                 "test") # GOF
 
-Y <- eval(as.name(str_c("Y.", spp,".dist")))
-dclass <- eval(as.name(str_c("dclass.", spp)))
-mean.cl <- max(1.001, mean(dclass[, "CL_Count"]))
-sd.cl <- max(0.001, sd(dclass[, "CL_Count"]))
-dimnames(dclass) <- NULL
-nInd <- nrow(dclass)
-nPoint <- length(Y)
 inits <- function() # Setting these based on posterior distribution from an initial successful run.
   list(N = Y, beta0.mean = rnorm(1, 1, 0.1), beta0.sd = rnorm(1, 0.66, 0.07),
        a0 = rnorm(1, 3.5, 0.5), b = rnorm(1, 3.16, 0.5)) # for hazard rate model
@@ -72,6 +57,10 @@ heatload.d <- Cov[, "heatload"]  %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 TWI.d <- Cov[, "TWI"]  %>%
+  tapply(gridID, mean) %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+ForAR.d <- Cov[, "ForAR"]  %>%
   tapply(gridID, mean) %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
@@ -99,21 +88,25 @@ DOY.b <- Cov[, "DayOfYear"] %>%
 Time.b <- Cov[, "Time"] %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
-st.time <- Sys.time()
-out <- jagsUI(data, inits, parameters.to.save = parameters, model.file, n.thin=nt, n.chains=nc,
-              n.burnin=nb, n.iter=ni, parallel=TRUE)
-end.time <- Sys.time()
-run.time <- end.time - st.time
-run.time
-rm(st.time,end.time)
+for(spp in Spp) {
+  save.out <- str_c(save.out.loc, "mod_", spp, "_abundance_treatment_global")
+  spp.ind <- which(Spp == spp)
 
-max(out$summary[which(!is.na(out$summary[ ,"Rhat"])) ,"Rhat"])
-sort(out$summary[,"Rhat"], decreasing = T)[1:100]
-
-min(out$summary[,"n.eff"])
-sort(out$summary[,"n.eff"])[1:100]
-
-sum(out$sims.list$test) / out$mcmc.info$n.samples
-
-library(R.utils)
-saveObject(out, save.out)
+  area.band <- area.band.list[[spp.ind]]
+  area.prop <- area.prop.list[[spp.ind]]
+  breaks <- breaks.list[[spp.ind]]
+  area.circle <- area.circle.list[spp.ind]
+  cutoff <- cutoff.list[spp.ind]
+  
+  Y <- eval(as.name(str_c("Y.", spp,".dist")))
+  dclass <- eval(as.name(str_c("dclass.", spp)))
+  mean.cl <- max(1.001, mean(dclass[, "CL_Count"]))
+  sd.cl <- max(0.001, sd(dclass[, "CL_Count"]))
+  dimnames(dclass) <- NULL
+  nInd <- nrow(dclass)
+  nPoint <- length(Y)
+  
+  out <- jagsUI(data, inits, parameters.to.save = parameters, model.file, n.thin=nt, n.chains=nc,
+                n.burnin=nb, n.iter=ni, parallel=TRUE)
+  saveObject(out, save.out)
+}
