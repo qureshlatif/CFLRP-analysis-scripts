@@ -29,7 +29,8 @@ dropGrids <- c("CO-BCR16-PC24", "CO-BCR16-PC27", "CO-BCR16-PC28", "CO-BCR16-PC31
 
 #### Compile species list ####
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
 BCRDataAPI::add_columns(c('BirdCode|str',
                           'Species|str')
 )
@@ -84,7 +85,8 @@ spp.excluded <- grab %>%
 
 #### Detection data ####
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -179,18 +181,15 @@ bird_data <- grab %>%  # Store bird survey data for later use.
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year))
 
 #### Covariate data ####
-# Canopy data #
+# Base canopy data #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
                           'Stratum|str',
                           'o_canopy_percent|int',
-                          'OverstorySpecies|str',
-                          'OverstorySpeciesAbundance|int',
-                          'OverstoryCommonName|str',
-                          'OverstoryScientificName|str',
                           'NumSnags|int',
                           'primaryHabitat|str',
                           'HabitatCommonName',
@@ -202,46 +201,70 @@ BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
                         str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
                         'Year in 2014,2015,2016',
                         'UnusableDataOverstorySpecies = FALSE'))
-grab <- BCRDataAPI::get_data() %>%
+grab.base <- BCRDataAPI::get_data() %>%
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
-  rename(CanCov = o_canopy_percent, CanHt = o_mean_height,
-         Species = OverstorySpecies, Abundance = OverstorySpeciesAbundance) %>%
+  rename(CanCov = o_canopy_percent, CanHt = o_mean_height) %>%
   mutate(CanCov = replace(CanCov, which(CanCov == -1), NA),
          CanHt = replace(CanHt, which(CanHt == -1), NA),
-         NumSnags = replace(NumSnags, which(NumSnags == -1), NA)) %>%
-  filter(Abundance != -1) # There are two records here. 100 - sum(Abundance for other species) </= 1, so decided to delete them.
+         NumSnags = replace(NumSnags, which(NumSnags == -1), NA)) %>% 
+  select(Point_year, CanCov:CanHt)
+
+# Species canopy data #
+BCRDataAPI::reset_api()
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::add_columns(c('TransectNum|str',
+                          'Point|int',
+                          'Year|int',
+                          'Stratum|str',
+                          'OverstorySpecies|str',
+                          'OverstorySpeciesAbundance|int',
+                          'OverstoryCommonName|str',
+                          'OverstoryScientificName|str'
+))
+
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
+                        'Year in 2014,2015,2016',
+                        'UnusableDataOverstorySpecies = FALSE'))
+grab.spp <- BCRDataAPI::get_data() %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  rename(Species = OverstorySpecies, Abundance = OverstorySpeciesAbundance) %>%
+  filter(Abundance != -1)  %>% # There are two records here. 100 - sum(Abundance for other species) </= 1, so decided to delete them.
+  select(Point_year, Species:OverstoryScientificName)
 
 # Primary habitats table #
-#grab %>% select(primaryHabitat, HabitatCommonName) %>%
+#grab.base %>% select(primaryHabitat, HabitatCommonName) %>%
 #  unique %>% arrange(primaryHabitat) %>%
 #  View
 
 # Overstory species table (refer to this for developing categories). #
-#grab %>% select(Species, OverstoryCommonName, OverstoryScientificName) %>%
+#grab.spp %>% select(Species, OverstoryCommonName, OverstoryScientificName) %>%
 #  rename(ComName = OverstoryCommonName, SciName = OverstoryScientificName) %>%
 #  unique %>% arrange(Species) %>%
 #  View
 
 veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%
-  left_join(grab %>%
+  left_join(grab.base %>%
               select(Point_year, CanCov, CanHt, primaryHabitat, NumSnags) %>%
               unique %>%
               # Calculate forest indicator
               mutate(Forest = (primaryHabitat %in% c("AS", "BU", "II", "LO", "LP", "MC", "OA", "PP", "SF")) %>% as.integer) %>%
               select(-primaryHabitat), by = "Point_year") %>%
   # Species group relative covers #
-  left_join(grab %>%
+  left_join(grab.spp %>%
               reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
               rename(RCOV_PP = PP, RCOV_DF = DF, RCOV_AS = AS) %>%
               mutate(RCOV_Dead = DC + DD + DA + BC + BD + DJ) %>%
               select(Point_year, RCOV_PP, RCOV_DF, RCOV_AS, RCOV_Dead), by = "Point_year") %>%
   # Everything else (Keep track of what the majority of this is.) #
-  left_join(grab %>%
+  left_join(grab.spp %>%
               filter(!Species %in% c("PP", "DF", "AS", "DC", "DD", "DA", "BC", "BD", "DJ")) %>%
               reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
               mutate(RCOV_OT = select(., -Point_year) %>% apply(1, sum)) %>%
               select(Point_year, RCOV_OT), by = "Point_year") %>%
-  mutate_at(vars(RCOV_PP:RCOV_OT), funs(replace(.,is.na(.),0))) %>%
+  mutate_at(vars(RCOV_PP:RCOV_OT), (function(x) replace(x,is.na(x),0))) %>%
   mutate(RCOV_TOT = RCOV_PP + RCOV_DF + RCOV_AS + RCOV_Dead + RCOV_OT) %>%
   # RCOV_TOT values != 100 (n = 83) are within 10% of 100, so rescaling them to sum to 100.
   mutate(RCOV_PP = (RCOV_PP / RCOV_TOT) *100) %>%
@@ -252,13 +275,37 @@ veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%
   select(-RCOV_TOT)
 
 # Shrub data #
+  # Base #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
                           'shrub_cover|int',
-                          'shrub_mean_height|num',
+                          'shrub_mean_height|num'
+))
+
+BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
+                        str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
+                        str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
+                        'Year in 2014,2015,2016',
+                        'ShrubSpecies = FALSE'
+                        ))
+grab.base <- BCRDataAPI::get_data() %>%
+  mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
+  rename(ShrubHt = shrub_mean_height) %>%
+  mutate(shrub_cover = replace(shrub_cover, which(shrub_cover == -1), NA),
+         ShrubHt = replace(ShrubHt, which(ShrubHt == -1), NA)) %>%
+  select(Point_year, shrub_cover, ShrubHt)
+
+  # Species #
+BCRDataAPI::reset_api()
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::add_columns(c('TransectNum|str',
+                          'Point|int',
+                          'Year|int',
                           'ShrubLayerSpecies|str',
                           'ShrubLayerCommonName|str',
                           'ShrubLayerScientificName|str',
@@ -270,15 +317,13 @@ BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
                         str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
                         'Year in 2014,2015,2016',
                         'ShrubSpecies = FALSE'
-                        ))
-grab <- BCRDataAPI::get_data() %>%
+))
+grab.spp <- BCRDataAPI::get_data() %>%
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
-  rename(ShrubHt = shrub_mean_height,
-         Species = ShrubLayerSpecies, Abundance = ShrubLayerSpeciesAbundance) %>%
-  mutate(shrub_cover = replace(shrub_cover, which(shrub_cover == -1), NA),
-         ShrubHt = replace(ShrubHt, which(ShrubHt == -1), NA)) %>%
+  rename(Species = ShrubLayerSpecies, Abundance = ShrubLayerSpeciesAbundance) %>%
   filter(!Species %in% c("BG", "SN")) %>% # Remove stuff that isn't a shrub
-  mutate(Abundance = replace(Abundance, which(Point_year == "CO-CFLRP-CF28-15-2014" & Species == "SU"), 30)) # Fill in missing value with 100 - sum(other spp)
+  mutate(Abundance = replace(Abundance, which(Point_year == "CO-CFLRP-CF28-15-2014" & Species == "SU"), 30)) %>% # Fill in missing value with 100 - sum(other spp)
+  select(Point_year, Species:Abundance)
 
 # Major shrub spp (> 1000 records): CJ & JU (juniper), DF (Douglas fir), GB (Gooseberry / Currant / Ribes), AS (Aspen), PP (ponderosa pine)
 # Minor shrub spp (300-500 records): CR (cliff rose, Purshia spp.), MM (Mountain Mahogany), LP (lodgepole pine), WX (waxflower), MA (Rocky Mountain Maple), ES (Englemann Spruce)
@@ -298,17 +343,17 @@ grab <- BCRDataAPI::get_data() %>%
     # Mesic - c("WI", "WR", "AL", "WB", "PC", "BI", "TA", "NC", "RD")
     # Other (left out) - c("MA", "SC", "NB", "UD", "OT", "MS", "HA", "BU", "AM", "SW", "DD", "VI", "CA", "XX", "AP", "PI", "SI", "SE", "OB", "LU", "LT", "AH")
 
-shrub_data <- grab %>%
+shrub_data <- grab.base %>%
   mutate(ShrubVol = (((shrub_cover / 100) * pi * 50^2) * ShrubHt) ^ (1/3)) %>%
   select(Point_year, shrub_cover, ShrubHt, ShrubVol) %>%
   unique %>%
   # Shrub diversity #
-  left_join(grab %>%
+  left_join(grab.spp %>%
               mutate(p = Abundance / 100) %>%
               dplyr::group_by(Point_year) %>%
               summarise(ShrubDiv = -1*sum(p * log(p))), by = "Point_year") %>%
   # Species group relative covers #
-  left_join(grab %>%
+  left_join(grab.spp %>%
               reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
               rename(RSCV_AS = AS) %>%
               mutate(RSCV_Ladder = CJ + JU + DF + PP + LP + ES + UC + SU +
@@ -319,14 +364,14 @@ shrub_data <- grab %>%
                 # Mesic: WI + WR + AL + WB + PC + BI + TA + NC + RD
               select(Point_year, RSCV_Ladder, RSCV_Ber, RSCV_AS), by = "Point_year") %>%
   # Everything else #
-  left_join(grab %>%
+  left_join(grab.spp %>%
               filter(!Species %in% c("CJ", "JU", "DJ","DF", "PP", "LP", "ES", "UC", "SU", "BR", "DD", "BC", "PY", "BS", "LM", "WF",
                                      "GB", "SY", "BB", "CC", "SB", "TW", "HB", "OG", "EB",
                                      "AS", "DA")) %>%
               reshape2::dcast(Point_year ~ Species, sum, value.var = "Abundance") %>%
               mutate(RSCV_OT = select(., -Point_year) %>% apply(1, sum)) %>%
               select(Point_year, RSCV_OT), by = "Point_year") %>%
-  mutate_at(vars(RSCV_Ladder:RSCV_OT), funs(replace(.,is.na(.),0))) %>%
+  mutate_at(vars(RSCV_Ladder:RSCV_OT), (function(x) replace(x,is.na(x),0))) %>%
   mutate(RCOV_TOT = RSCV_Ladder + RSCV_Ber + RSCV_AS + RSCV_OT) %>% # RSCV_Jun + RSCV_Xer + RSCV_Mes + 
   # Rescale where TOT within 10% of 100...
   #mutate(RSCV_Jun = (RSCV_Jun / RCOV_TOT) *100) %>%
@@ -355,11 +400,12 @@ shrub_data <- shrub_data %>%
   select(-shrub_cover)
 
 veg_data <- veg_data %>% left_join(shrub_data, by = "Point_year")
-rm(shrub_data, grab, ind.missing, mod)
+rm(shrub_data, grab.base, grab.spp, ind.missing, mod)
 
 # Ground cover #
 BCRDataAPI::reset_api()
-BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
+BCRDataAPI::set_api_server('192.168.137.196')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
