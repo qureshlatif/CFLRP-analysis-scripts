@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 
 ################## Inputs ####################
 # Get latest AOU checklist with tax names and order #
-aou.checklist <- read.csv("C:/Users/Quresh.Latif/files/data/NACC_list_bird_species_downloaded_20180319.csv",
+aou.checklist <- read.csv("C:/Users/Quresh.Latif/files/data/NACC_list_bird_species_downloaded_20190731.csv",
                           header = T, stringsAsFactors = F) %>% tbl_df %>%
   mutate(tax_ord = row_number())
 
@@ -29,8 +29,7 @@ dropGrids <- c("CO-BCR16-PC24", "CO-BCR16-PC27", "CO-BCR16-PC28", "CO-BCR16-PC31
 
 #### Compile species list ####
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('BirdCode|str',
                           'Species|str')
 )
@@ -85,8 +84,7 @@ spp.excluded <- grab %>%
 
 #### Detection data ####
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -183,8 +181,7 @@ bird_data <- grab %>%  # Store bird survey data for later use.
 #### Covariate data ####
 # Base canopy data #
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -211,8 +208,7 @@ grab.base <- BCRDataAPI::get_data() %>%
 
 # Species canopy data #
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -277,8 +273,7 @@ veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%
 # Shrub data #
   # Base #
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -290,7 +285,7 @@ BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
                         str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
                         str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
                         'Year in 2014,2015,2016',
-                        'ShrubSpecies = FALSE'
+                        'UnusableDataShrubSpecies = FALSE'
                         ))
 grab.base <- BCRDataAPI::get_data() %>%
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
@@ -301,8 +296,7 @@ grab.base <- BCRDataAPI::get_data() %>%
 
   # Species #
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
@@ -316,7 +310,7 @@ BCRDataAPI::filter_on(c(str_c('Stratum in ', str_c(strata, collapse = ",")),
                         str_c('SelectionMethod in ', str_c(SampDesign, collapse = ",")),
                         str_c('TransectNum not_in ', str_c(dropGrids, collapse = ",")), # Drop 5 IMBCR grids with extent of canopy gaps outside range for CFLRP grids
                         'Year in 2014,2015,2016',
-                        'ShrubSpecies = FALSE'
+                        'UnusableDataShrubSpecies = FALSE'
 ))
 grab.spp <- BCRDataAPI::get_data() %>%
   mutate(Point_year = str_c(TransectNum, "-", str_pad(Point, width = 2, pad = "0", side = "left"), "-", Year)) %>%
@@ -404,8 +398,7 @@ rm(shrub_data, grab.base, grab.spp, ind.missing, mod)
 
 # Ground cover #
 BCRDataAPI::reset_api()
-#BCRDataAPI::set_api_server('analysis.api.birdconservancy.org')
-BCRDataAPI::set_api_server('192.168.137.196')
+BCRDataAPI::set_api_server('analysis.api.bcr.eco')
 BCRDataAPI::add_columns(c('TransectNum|str',
                           'Point|int',
                           'Year|int',
