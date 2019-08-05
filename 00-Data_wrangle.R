@@ -236,9 +236,10 @@ grab.spp <- BCRDataAPI::get_data() %>%
 #  View
 
 # Overstory species table (refer to this for developing categories). #
-#grab.spp %>% select(Species, OverstoryCommonName, OverstoryScientificName) %>%
+#grab.spp %>%
 #  rename(ComName = OverstoryCommonName, SciName = OverstoryScientificName) %>%
-#  unique %>% arrange(Species) %>%
+#  dplyr::group_by(Species, ComName, SciName) %>% summarise(Freq = n()) %>%
+#  arrange(Freq) %>%
 #  View
 
 veg_data <- data.frame(Point_year = pointXyears.list, stringsAsFactors = F) %>%

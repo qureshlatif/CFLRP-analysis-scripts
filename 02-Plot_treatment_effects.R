@@ -14,7 +14,6 @@ mod <- loadObject("mod_treatment_d0yr")
 pars <- c("bd.ptrt", "bb.trt", "bb.YST")
 cols <- (c("", ".lo", ".hi") %>%
            expand.grid(pars, stringsAsFactors = F) %>%
-           select(Var2, Var1) %>%
            mutate(Var3 = str_c(Var2, Var1, sep = "")))$Var3
 tbl_pars <- matrix(NA, nrow = length(spp.list), ncol = length(cols), dimnames = list(NULL, cols))
 
