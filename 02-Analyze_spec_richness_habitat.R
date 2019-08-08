@@ -285,7 +285,7 @@ p.POTR5 <- ggplot(data = dat.SR, aes(x = POTR5, y = Y)) +
   labs(x = vtit, y = NULL)
 
 v <- ShrbVol.b
-vtit <- "Shrub volume (ShrbVol)"
+vtit <- "Shrub-sapling volume (ShrbVol)"
 b1 <- mod$sims.list$bb.shvol
 dat.pred <- data.frame(x = seq(min(v, na.rm = T), max(v, na.rm = T), length.out = 20)) %>%
   mutate(z = (x - mean(v, na.rm = T)) / sd(v, na.rm = T))
