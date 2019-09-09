@@ -2,10 +2,9 @@ library(jagsUI)
 library(stringr)
 library(dplyr)
 library(R.utils)
+library(QSLpersonal)
 library(ggplot2)
 library(cowplot)
-library(QSLpersonal)
-library(abind) # Temp until model correcting GRAJ to CAJA is complete.
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -49,13 +48,6 @@ tbl_pars[, "theta.hi"] <- apply(parm, 2, function(x) quantile(x, prob = 0.975, t
 
 rm(parm)
 
-# Delete this once the habitat model started on 7/31/2019 is done. #
-# tbl_pars <- rbind(tbl_pars[1:(which(spp.list == "CAJA") - 1), ], # Temp command to deal with renaming of GRAJ to CAJA until corrected model is complete.
-#                   tbl_pars[nrow(tbl_pars), ],
-#                   tbl_pars[which(spp.list == "CAJA"):(nrow(tbl_pars) - 1), ])
-# tbl_pars[which(spp.list %in% c("TRES", "VGSW", "NRWS", "PUMA")),] <- # Temp to deal with change in taxonomic order of swallows.
-#   tbl_pars[which(spp.list %in% c("TRES", "VGSW", "NRWS", "PUMA"))[c(2:4, 1)],]
-
 tbl_pars_all <- tbl_pars
 tbl_pars <- tbl_pars[, c(1:3, 13:51)]
 
@@ -92,6 +84,8 @@ rm(col.chck, chck)
 dat.plt <- dat.plt %>%
   bind_cols(dat.supp %>% as.data.frame)
 rm(dat.supp)
+
+theme_set(theme_cowplot())
 
 ## Grid level relationships ##
 p.psi <- ggplot(dat = dat.plt, aes(x = index, y = psi)) +
@@ -146,7 +140,7 @@ p <- ggdraw() +
   draw_plot(p.PAROpn, x = 0.7625, y = 0, width = 0.2375, height = 1) +
   draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
 
-save_plot("Plot_landscape_effects.tiff", p, ncol = 4, nrow = 3, dpi = 200)
+save_plot("Plot_landscape_effects.tiff", p, ncol = 3, nrow = 4, dpi = 200)
 
 ## Point level relationships 1 ##
 p.theta <- ggplot(dat = dat.plt, aes(x = index, y = theta)) +
@@ -293,7 +287,7 @@ p <- ggdraw() +
   draw_plot(p.Herb, x = 0.8416667, y = 0, width = 0.1583333, height = 1) +
   draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
 
-save_plot("Plot_veg_CanComp&Understory_effects.tiff", p, ncol = 4, nrow = 3, dpi = 200)
+save_plot("Plot_veg_CanComp&Understory_effects.tiff", p, ncol = 3, nrow = 4, dpi = 200)
 
 p <- ggdraw() + 
   draw_plot(p.theta, x = 0.03, y = 0, width = 0.097, height = 1) +
@@ -307,4 +301,4 @@ p <- ggdraw() +
   draw_plot(p.LadFuel, x = 0.806, y = 0, width = 0.097, height = 1) +
   draw_plot(p.Herb, x = 0.903, y = 0, width = 0.097, height = 1) +
   draw_plot_label("Species", x = 0, y = 0.5, size = 40, angle = 90, hjust = 0)
-save_plot("Plot_veg_all_effects.tiff", p, ncol = 6, nrow = 3, dpi = 200)
+save_plot("Plot_veg_all_effects.tiff", p, ncol = 5, nrow = 4, dpi = 200)

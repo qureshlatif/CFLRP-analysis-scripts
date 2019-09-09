@@ -2,9 +2,9 @@ library(jagsUI)
 library(stringr)
 library(dplyr)
 library(R.utils)
+library(QSLpersonal)
 library(ggplot2)
 library(cowplot)
-library(QSLpersonal)
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -365,4 +365,4 @@ p <- ggdraw() +
                   x = c(0, 0), y = c(0.29, 0.79),
                   angle = c(90, 90), hjust = c(0, 0))
 
-save_plot("Plot_richness_hab.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+save_plot("Plot_richness_hab.tiff", p, ncol = 3, nrow = 4, dpi = 200)

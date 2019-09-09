@@ -31,7 +31,7 @@ pars <- c("omega", "rho.ab", "rho.bd",
           "Betab.HerbGrassVol", "sigma.Betab.HerbGrassVol",
           
           "Betaa.Time", "sigma.Betaa.Time", "Betaa.Time2", "sigma.Betaa.Time2",
-          "Betaa.DOY", "sigma.Betaa.DOY", "Betaa.DOY2", "sigma.Betaa.DOY2",
+          "Betaa.DOY", "sigma.Betaa.DOY",
           "Betaa.Trt", "sigma.Betaa.Trt", "Betaa.YST", "sigma.Betaa.YST",
           "Betaa.CCov", "sigma.Betaa.CCov", "Betaa.SHVol", "sigma.Betaa.SHVol")
 
