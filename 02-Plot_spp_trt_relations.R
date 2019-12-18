@@ -5,6 +5,7 @@ library(dplyr)
 library(R.utils)
 library(ggplot2)
 library(cowplot)
+theme_set(theme_cowplot())
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -127,7 +128,7 @@ save_plot("Plot_spp_grid&pnt_relations.tiff", p, ncol = 3, nrow = 2.5, dpi = 200
 
 
 ##____ Group 2 - positive relations at grid only ____##
-spp.plot <- c("CONI", "WISA", "GRAJ", "CLNU",
+spp.plot <- c("CONI", "WISA", "CAJA", "CLNU",
               "WBNU", "PYNU", "AMRO", "PIGR", "BHCO")
 
 for(i in 1:length(spp.plot)) {
@@ -197,7 +198,7 @@ p <- ggdraw() +
                   x = c(0, 0.08, 0.33, 0.56, 0.8), y = c(0.47, 0.05, 0.05, 0.05, 0.05),
                   angle = c(90, 0, 0, 0, 0), size = c(20, 15, 15, 15, 15), hjust = c(0, 0, 0, 0, 0))
 
-save_plot("Plot_spp_positive_grid_only.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+save_plot("Plot_spp_positive_grid_only.tiff", p, ncol = 2.25, nrow = 3.5, dpi = 200)
 
 ##____ Group 3 - point relations only ____##
 spp.plot <- c("HAWO", "COFL", "STJA", "VGSW",
