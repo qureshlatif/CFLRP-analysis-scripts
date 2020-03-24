@@ -1,6 +1,7 @@
 require(QSLpersonal)
 require(ggplot2)
 require(cowplot)
+theme_set(theme_cowplot())
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -185,7 +186,7 @@ p.point <- ggdraw() +
   #draw_plot(p.SOHtRatio, x = 0.5, y = 0, width = 0.5, height = 0.1428571)
 
 
-save_plot("figure_trt_vs_hab_point.tiff", p.point, ncol = 5, nrow = 3, dpi = 300)
+save_plot("figure_trt_vs_hab_point.tiff", p.point, ncol = 3, nrow = 3, dpi = 600)
 
 #### Grid-level relations ####
 ## Tabulate correlation coefficients ##
@@ -236,7 +237,7 @@ p.grid <- ggdraw() +
   draw_plot(p.grid, x = 0, y = 0.05, width = 1, height = 0.95) +
   draw_plot_label("Percent treated (percTrt)", x = 0.33, y = 0.05, hjust = 0)
 
-save_plot("figure_trt_vs_hab_grid.tiff", p.grid, ncol = 1.5, nrow = 3, dpi = 300)
+save_plot("figure_trt_vs_hab_grid.tiff", p.grid, ncol = 1, nrow = 3, dpi = 600)
 
 ## Correlations among habitat variables ##
 cor(dat.grid[vars], use = "complete") %>%

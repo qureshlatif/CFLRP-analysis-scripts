@@ -7,6 +7,7 @@ library(cowplot)
 library(lme4)
 library(QSLpersonal)
 library(MASS)
+theme_set(theme_cowplot())
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -148,7 +149,8 @@ p <- ggdraw() +
   draw_plot(p.trt, x = 0, y = 0, width = 0.525, height = 0.5) +
   draw_plot(p.yst, x = 0.5, y = 0, width = 0.475, height = 0.5)
 
-save_plot("Plot_richness_treatment.tiff", p, ncol = 2, nrow = 2, dpi = 200)
+#save_plot("Plot_richness_treatment.tiff", p, ncol = 2, nrow = 2, dpi = 200)
+save_plot("manuscript/Figure4.tiff", p, ncol = 1.5, nrow = 2.5, dpi = 600)
 
 #c(median(mod$sims.list$rho.ab), quantile(mod$sims.list$rho.ab, prob = 0.025, type = 8), quantile(mod$sims.list$rho.ab, prob = 0.975, type = 8))
 #c(median(mod$sims.list$rho.bd), quantile(mod$sims.list$rho.bd, prob = 0.025, type = 8), quantile(mod$sims.list$rho.bd, prob = 0.975, type = 8))

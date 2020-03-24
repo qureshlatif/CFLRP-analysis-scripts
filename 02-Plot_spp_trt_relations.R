@@ -124,7 +124,7 @@ p <- ggdraw() +
                   x = c(0, 0.08, 0.33, 0.56, 0.8), y = c(0.47, 0.05, 0.05, 0.05, 0.05),
                   angle = c(90, 0, 0, 0, 0), size = c(20, 15, 15, 15, 15), hjust = c(0, 0, 0, 0, 0))
 
-save_plot("Plot_spp_grid&pnt_relations.tiff", p, ncol = 3, nrow = 2.5, dpi = 200)
+save_plot("Plot_spp_grid&pnt_relations.tiff", p, ncol = 2.2, nrow = 2.5, dpi = 600)
 
 
 ##____ Group 2 - positive relations at grid only ____##
@@ -198,7 +198,7 @@ p <- ggdraw() +
                   x = c(0, 0.08, 0.33, 0.56, 0.8), y = c(0.47, 0.05, 0.05, 0.05, 0.05),
                   angle = c(90, 0, 0, 0, 0), size = c(20, 15, 15, 15, 15), hjust = c(0, 0, 0, 0, 0))
 
-save_plot("Plot_spp_positive_grid_only.tiff", p, ncol = 2.25, nrow = 3.5, dpi = 200)
+save_plot("Plot_spp_positive_grid_only.tiff", p, ncol = 2.25, nrow = 3.5, dpi = 600)
 
 ##____ Group 3 - point relations only ____##
 spp.plot <- c("HAWO", "COFL", "STJA", "VGSW",
@@ -274,7 +274,7 @@ p <- ggdraw() +
                   x = c(0, 0.08, 0.33, 0.56, 0.8), y = c(0.47, 0.05, 0.05, 0.05, 0.05),
                   angle = c(90, 0, 0, 0, 0), size = c(20, 15, 15, 15, 15), hjust = c(0, 0, 0, 0, 0))
 
-save_plot("Plot_spp_point_only.tiff", p, ncol = 3, nrow = 3, dpi = 200)
+save_plot("Plot_spp_point_only.tiff", p, ncol = 2.5, nrow = 3, dpi = 600)
 
 ##____ Group 4 - relations with YST only ____##
 spp.plot <- c("DEJU", "YRWA")
@@ -331,7 +331,7 @@ p <- ggdraw() +
                   x = c(0, 0.18, 0.64), y = c(0.47, 0.05, 0.05),
                   angle = c(90, 0, 0), size = c(20, 15, 15), hjust = c(0, 0, 0))
 
-save_plot("Plot_spp_YST_relations_only.tiff", p, ncol = 2, nrow = 2, dpi = 200)
+save_plot("Plot_spp_YST_relations_only.tiff", p, ncol = 1.5, nrow = 2, dpi = 600)
 
 # ##____ RBNU ____##
 # spp <- "RBNU"

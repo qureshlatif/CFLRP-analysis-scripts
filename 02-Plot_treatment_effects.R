@@ -4,6 +4,7 @@ library(dplyr)
 library(R.utils)
 library(ggplot2)
 library(cowplot)
+theme_set(theme_cowplot())
 
 setwd("C:/Users/Quresh.Latif/files/projects/FS/CFLRP")
 load("Data_compiled.RData")
@@ -145,4 +146,5 @@ p <- ggdraw() +
                   angle = c(90, 0, 0),
                   hjust = c(0, 0, 0))
 
-save_plot("Plot_trt_effects.tiff", p, ncol = 3, nrow = 4.5, dpi = 200)
+#save_plot("Plot_trt_effects.tiff", p, ncol = 3, nrow = 4.5, dpi = 200)
+save_plot("manuscript/Figure3.tiff", p, ncol = 2, nrow = 4.5, dpi = 400)
