@@ -102,13 +102,14 @@ dat.SR <- data.frame(Trt = (Trt.b %>% as.numeric),
       as.numeric)
 psi <- expit(apply(mod$sims.list$d0, c(1, 2), mean))
 b0 <- mod$sims.list$b0
+omega <- mod$sims.list$omega
 
 dat.pred = data.frame(x = c(0, 1))
 b1 <- mod$sims.list$bb.trt
 SR.pred <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(SR.pred)[2]) {
   theta <- expit(b0 + b1*dat.pred$x[i])
-  SR.pred[, i] <- apply(psi * theta, 1, sum)
+  SR.pred[, i] <- apply(psi * theta * omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(pred.md = apply(SR.pred, 2, median),
@@ -130,7 +131,7 @@ b2 <- mod$sims.list$bb.YST
 SR.pred <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(SR.pred)[2]) {
   theta <- expit(b0 + b1 + b2*dat.pred$z[i])
-  SR.pred[, i] <- apply(psi * theta, 1, sum)
+  SR.pred[, i] <- apply(psi * theta * omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(pred.md = apply(SR.pred, 2, median),

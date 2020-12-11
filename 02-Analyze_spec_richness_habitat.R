@@ -12,7 +12,11 @@ load("Data_compiled.RData")
 
 mod <- loadObject("mod_habitat_d0yr_reduced")
 
+
 #### Plot species richness ####
+
+## Derived parameters used for calculating predicted richness throughout ##
+omega <- mod$sims.list$omega
 
 ## Grid level ##
 gridID <- Cov[, "gridIndex"]
@@ -56,7 +60,7 @@ d1 <- mod$sims.list$bd.PACC10_3km
 Y <- matrix(NA, nrow = dim(d0)[1], ncol = nrow(dat.pred.PACC10))
 for(i in 1:dim(Y)[2]) {
   psi <- expit(d0 + d1*dat.pred.PACC10$z[i])
-  Y[, i] <- apply(psi, 1, sum)
+  Y[, i] <- apply(psi*omega, 1, sum)
 }
 dat.pred.PACC10 <- dat.pred.PACC10 %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -67,7 +71,7 @@ d1 <- mod$sims.list$bd.PACC40_3km
 Y <- matrix(NA, nrow = dim(d0)[1], ncol = nrow(dat.pred.PACC40))
 for(i in 1:dim(Y)[2]) {
   psi <- expit(d0 + d1*dat.pred.PACC40$z[i])
-  Y[, i] <- apply(psi, 1, sum)
+  Y[, i] <- apply(psi*omega, 1, sum)
 }
 dat.pred.PACC40 <- dat.pred.PACC40 %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -78,7 +82,7 @@ d1 <- mod$sims.list$bd.mnPerArRatio_Opn3km
 Y <- matrix(NA, nrow = dim(d0)[1], ncol = nrow(dat.pred.mnPAR))
 for(i in 1:dim(Y)[2]) {
   psi <- expit(d0 + d1*dat.pred.mnPAR$z[i])
-  Y[, i] <- apply(psi, 1, sum)
+  Y[, i] <- apply(psi*omega, 1, sum)
 }
 dat.pred.mnPAR <- dat.pred.mnPAR %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -167,7 +171,7 @@ dat.pred <- data.frame(x = seq(min(v, na.rm = T), max(v, na.rm = T), length.out 
 Y <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(Y)[2]) {
   theta <- expit(b0 + b1*dat.pred$z[i])
-  Y[, i] <- apply(psi*theta, 1, sum)
+  Y[, i] <- apply(psi*theta*omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -188,7 +192,7 @@ dat.pred <- data.frame(x = seq(min(v, na.rm = T), max(v, na.rm = T), length.out 
 Y <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(Y)[2]) {
   theta <- expit(b0 + b1*dat.pred$z[i])
-  Y[, i] <- apply(psi*theta, 1, sum)
+  Y[, i] <- apply(psi*theta*omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -209,7 +213,7 @@ dat.pred <- data.frame(x = seq(min(v, na.rm = T), max(v, na.rm = T), length.out 
 Y <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(Y)[2]) {
   theta <- expit(b0 + b1*dat.pred$z[i])
-  Y[, i] <- apply(psi*theta, 1, sum)
+  Y[, i] <- apply(psi*theta*omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(Y.md = apply(Y, 2, median),
@@ -230,7 +234,7 @@ dat.pred <- data.frame(x = seq(min(v, na.rm = T), max(v, na.rm = T), length.out 
 Y <- matrix(NA, nrow = dim(b0)[1], ncol = nrow(dat.pred))
 for(i in 1:dim(Y)[2]) {
   theta <- expit(b0 + b1*dat.pred$z[i])
-  Y[, i] <- apply(psi*theta, 1, sum)
+  Y[, i] <- apply(psi*theta*omega, 1, sum)
 }
 dat.pred <- dat.pred %>%
   mutate(Y.md = apply(Y, 2, median),
